@@ -1,20 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 柯兴科技（深圳）有限公司官网
 
-# Run and deploy your AI Studio app
+官网地址：https://kexing.allapple.top
 
-This contains everything you need to run your app locally.
+本项目为柯兴科技企业官网源码，基于 Vite + React + TypeScript 构建。
 
-View your app in AI Studio: https://ai.studio/apps/20a3a767-cc72-4983-bf0f-18ce052f367d
+## 技术栈
+- Vite
+- React
+- TypeScript
+- CSS
 
-## Run Locally
+## 本地开发
+1. 安装依赖
+   npm install
 
-**Prerequisites:**  Node.js
+2. 启动开发环境
+   npm run dev
 
+3. 打包构建
+   npm run build
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+4. 本地预览
+   npm run preview
+
+## 项目结构
+- src/：页面与样式源码
+- public/：Logo、favicon、品牌素材、SEO 静态文件
+- index.html：站点入口模板
+
+## 部署说明
+当前线上由 Caddy 托管静态构建产物，部署流程：
+1. npm run build
+2. 将 dist/ 同步到服务器站点目录
+3. 验证 https://kexing.allapple.top 可访问
+
+## 版权
+版权所有 © 柯兴科技（深圳）有限公司。
