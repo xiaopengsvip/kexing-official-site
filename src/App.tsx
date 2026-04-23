@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import * as THREE from 'three';
 import {
   ArrowRight,
   Bot,
@@ -22,6 +23,7 @@ type NavLink = { name: string; href: string };
 
 const navLinks: NavLink[] = [
   { name: '首页', href: '#home' },
+  { name: '3D实验', href: '#lab3d' },
   { name: '关于我们', href: '#about' },
   { name: '服务能力', href: '#services' },
   { name: '案例场景', href: '#cases' },
@@ -202,6 +204,130 @@ function Hero() {
                 <p className="mt-1 text-lg font-bold text-white">{item.value}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HtmlIn3DLab() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const overlay = overlayRef.current;
+    if (!canvas || !overlay) return;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 100);
+    camera.position.set(0, 0.2, 4.2);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+    const directional = new THREE.DirectionalLight(0x89f5d1, 1.2);
+    directional.position.set(2, 2, 3);
+    scene.add(ambient, directional);
+
+    const knot = new THREE.Mesh(
+      new THREE.TorusKnotGeometry(1.05, 0.28, 240, 28),
+      new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.35, roughness: 0.28 }),
+    );
+    scene.add(knot);
+
+    const anchors = [
+      { pos: new THREE.Vector3(-1.6, 1.0, 0.2), el: null as HTMLElement | null },
+      { pos: new THREE.Vector3(1.55, 0.7, 0.4), el: null as HTMLElement | null },
+      { pos: new THREE.Vector3(-0.7, -1.35, 0.6), el: null as HTMLElement | null },
+      { pos: new THREE.Vector3(1.2, -1.15, -0.2), el: null as HTMLElement | null },
+    ];
+
+    anchors.forEach((item, index) => {
+      item.el = overlay.querySelector(`[data-anchor="${index}"]`) as HTMLElement | null;
+    });
+
+    const resize = () => {
+      const { clientWidth, clientHeight } = canvas;
+      renderer.setSize(clientWidth, clientHeight, false);
+      camera.aspect = clientWidth / Math.max(clientHeight, 1);
+      camera.updateProjectionMatrix();
+    };
+    resize();
+
+    let raf = 0;
+    const clock = new THREE.Clock();
+    const run = () => {
+      const t = clock.getElapsedTime();
+      knot.rotation.x = t * 0.22;
+      knot.rotation.y = t * 0.48;
+      knot.position.y = Math.sin(t * 0.8) * 0.08;
+
+      anchors.forEach((item) => {
+        if (!item.el) return;
+        const projected = item.pos.clone().project(camera);
+        const x = (projected.x * 0.5 + 0.5) * canvas.clientWidth;
+        const y = (-projected.y * 0.5 + 0.5) * canvas.clientHeight;
+        const depth = Math.max(0, Math.min(1, 1 - projected.z * 0.3));
+        item.el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${0.85 + depth * 0.25})`;
+        item.el.style.opacity = projected.z > 1 ? '0' : '1';
+      });
+
+      renderer.render(scene, camera);
+      raf = window.requestAnimationFrame(run);
+    };
+
+    raf = window.requestAnimationFrame(run);
+    window.addEventListener('resize', resize);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
+      knot.geometry.dispose();
+      (knot.material as THREE.Material).dispose();
+      renderer.dispose();
+    };
+  }, []);
+
+  const labCards = [
+    { title: 'DOM 卡片上浮', desc: '原生 HTML 卡片实时投影到 3D 场景，保持可选中文本与按钮交互。' },
+    { title: 'Three.js 光效', desc: '使用 WebGL 几何体+灯光做实时动效，强化品牌科技感。' },
+    { title: '实验性方向', desc: '后续可升级到 WICG HTML-in-Canvas / WebGPU 能力。' },
+    { title: '业务可落地', desc: '可用于产品展示、发布会页面、互动导览与可视化中枢。' },
+  ];
+
+  return (
+    <section id="lab3d" className="py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">3D 互动实验区（HTML x WebGL）</h2>
+            <p className="mt-3 max-w-3xl text-slate-300">
+              借鉴你提到的“HTML 进入 3D”思路，先落地一版可在线运行的实验模块：3D 场景实时渲染，DOM 信息卡作为交互层叠加与跟随。
+            </p>
+          </div>
+          <span className="hidden rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 md:inline-block">
+            Experimental
+          </span>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-3 md:p-4">
+          <div className="relative h-[440px] overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.16),rgba(2,6,23,0.9)_55%)]">
+            <canvas ref={canvasRef} className="h-full w-full" aria-label="3D交互演示画布" />
+            <div ref={overlayRef} className="pointer-events-none absolute inset-0">
+              {labCards.map((card, index) => (
+                <article
+                  key={card.title}
+                  data-anchor={index}
+                  className="pointer-events-auto absolute left-0 top-0 w-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/15 bg-slate-950/80 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur"
+                >
+                  <h3 className="text-sm font-semibold text-emerald-300">{card.title}</h3>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">{card.desc}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -439,6 +565,7 @@ export default function App() {
       <Navbar />
       <main id="main-content">
         <Hero />
+        <HtmlIn3DLab />
         <About />
         <Services />
         <Cases />
