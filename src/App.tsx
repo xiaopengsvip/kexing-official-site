@@ -56,7 +56,7 @@ function Navbar() {
   }, []);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-emerald-300/15 bg-[#03150f]/86 backdrop-blur-xl">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <a href="#home" className="flex items-center gap-3" aria-label="柯兴科技首页">
           <img src="/logo.png" alt="柯兴科技" className="h-10 w-auto md:h-11" />
@@ -72,8 +72,8 @@ function Navbar() {
                 aria-current={active ? 'page' : undefined}
                 className={`rounded-full px-4 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 ${
                   active
-                    ? 'bg-emerald-500/20 text-emerald-300'
-                    : 'text-slate-200/90 hover:bg-white/10 hover:text-white'
+                    ? 'bg-emerald-400/20 text-emerald-100 shadow-[0_0_0_1px_rgba(110,231,183,0.25)]'
+                    : 'text-slate-200/90 hover:bg-emerald-500/12 hover:text-emerald-50'
                 }`}
               >
                 {link.name}
@@ -82,7 +82,7 @@ function Navbar() {
           })}
           <a
             href="#contact"
-            className="ml-2 inline-flex items-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+            className="ml-2 inline-flex items-center rounded-full bg-gradient-to-r from-emerald-400 to-green-300 px-4 py-2 text-sm font-semibold text-[#042116] transition hover:brightness-105"
           >
             商务咨询
           </a>
@@ -91,7 +91,7 @@ function Navbar() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="rounded-lg p-2 text-slate-100 hover:bg-white/10 md:hidden"
+          className="rounded-lg p-2 text-slate-100 hover:bg-emerald-300/10 md:hidden"
           aria-label="切换菜单"
           aria-expanded={open}
           aria-controls="mobile-nav"
@@ -107,7 +107,7 @@ function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="border-t border-white/10 bg-slate-950/95 md:hidden"
+            className="border-t border-emerald-200/15 bg-[#03150f]/95 md:hidden"
           >
             <div className="space-y-1 px-4 py-4">
               {navLinks.map((link) => (
@@ -115,7 +115,7 @@ function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="block rounded-xl px-4 py-3 text-slate-100 hover:bg-white/10"
+                  className="block rounded-xl px-4 py-3 text-slate-100 hover:bg-emerald-300/10"
                 >
                   {link.name}
                 </a>
@@ -133,7 +133,7 @@ function Hero() {
     <section id="home" className="relative overflow-hidden pt-32 md:pt-40">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-20 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-400/20 blur-[90px]" />
-        <div className="absolute right-0 top-40 h-72 w-72 rounded-full bg-blue-500/20 blur-[100px]" />
+        <div className="absolute right-0 top-40 h-72 w-72 rounded-full bg-emerald-200/10 blur-[110px]" />
       </div>
 
       <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-20 sm:px-6 lg:grid-cols-12 lg:px-8 lg:pb-28">
@@ -141,7 +141,7 @@ function Hero() {
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1 text-xs font-semibold tracking-widest text-emerald-200"
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-200/10 px-4 py-1 text-xs font-semibold tracking-widest text-emerald-100"
           >
             <Sparkles className="h-3.5 w-3.5" /> 数智化系统解决方案
           </motion.span>
@@ -152,7 +152,7 @@ function Hero() {
             className="mt-6 text-4xl font-black leading-tight tracking-tight text-white md:text-6xl"
           >
             柯兴科技
-            <span className="mt-2 block text-transparent bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text">
+            <span className="mt-2 block bg-gradient-to-r from-emerald-200 via-green-200 to-emerald-400 bg-clip-text text-transparent">
               一站式智慧工程与软件服务
             </span>
           </motion.h1>
@@ -168,13 +168,13 @@ function Hero() {
           <div className="mt-8 flex flex-wrap gap-3">
             <a
               href="#services"
-              className="inline-flex items-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+              className="inline-flex items-center rounded-xl bg-gradient-to-r from-emerald-300 to-green-300 px-6 py-3 text-sm font-semibold text-[#032116] transition hover:brightness-105"
             >
               查看服务能力 <ArrowRight className="ml-2 h-4 w-4" />
             </a>
             <a
               href="#cases"
-              className="inline-flex items-center rounded-xl border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="inline-flex items-center rounded-xl border border-emerald-200/30 px-6 py-3 text-sm font-semibold text-emerald-50 transition hover:bg-emerald-300/10"
             >
               查看案例场景
             </a>
@@ -182,7 +182,7 @@ function Hero() {
         </div>
 
         <div className="lg:col-span-5">
-          <div className="rounded-3xl border border-white/15 bg-white/5 p-4 backdrop-blur-xl">
+          <div className="rounded-3xl border border-emerald-200/20 bg-white/5 p-4 backdrop-blur-xl">
             <img
               src="/brand-poster.png"
               alt="柯兴科技品牌展示"
@@ -199,7 +199,7 @@ function Hero() {
               { label: '服务方向', value: '弱电+软件+AI' },
               { label: '服务状态', value: '持续运营' },
             ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+              <div key={item.label} className="rounded-2xl border border-emerald-200/15 bg-[#072019]/75 p-4">
                 <p className="text-xs text-slate-400">{item.label}</p>
                 <p className="mt-1 text-lg font-bold text-white">{item.value}</p>
               </div>
@@ -392,20 +392,20 @@ function HtmlIn3DLab() {
               采用你的品牌 Logo 作为 3D 设计核心：中轴主 Logo + 环绕粒子 + HTML 信息层，让“品牌识别”直接成为互动体验本身。
             </p>
           </div>
-          <span className="hidden rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 md:inline-block">
+          <span className="hidden rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100 md:inline-block">
             Brand Motion Lab
           </span>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-3 md:p-4">
-          <div className="relative h-[460px] overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.22),rgba(2,6,23,0.92)_58%)]">
+        <div className="rounded-3xl border border-emerald-200/15 bg-[#041712]/75 p-3 md:p-4">
+          <div className="relative h-[460px] overflow-hidden rounded-2xl border border-emerald-200/20 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.26),rgba(2,17,14,0.96)_58%)]">
             <canvas ref={canvasRef} className="h-full w-full" aria-label="Logo主题3D交互演示画布" />
             <div ref={overlayRef} className="pointer-events-none absolute inset-0">
               {labCards.map((card, index) => (
                 <article
                   key={card.title}
                   data-anchor={index}
-                  className="pointer-events-auto absolute left-0 top-0 w-48 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/15 bg-slate-950/82 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur"
+                  className="pointer-events-auto absolute left-0 top-0 w-48 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-emerald-200/20 bg-[#04120f]/84 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur"
                 >
                   <h3 className="text-sm font-semibold text-emerald-300">{card.title}</h3>
                   <p className="mt-1 text-xs leading-5 text-slate-300">{card.desc}</p>
@@ -421,7 +421,7 @@ function HtmlIn3DLab() {
 
 function About() {
   return (
-    <section id="about" className="border-y border-white/5 bg-white/[0.02] py-20">
+    <section id="about" className="border-y border-emerald-100/10 bg-emerald-950/[0.14] py-20">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
         <div className="lg:col-span-7">
           <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">聚焦智慧工程与软件服务的一体化交付团队</h2>
@@ -439,7 +439,7 @@ function About() {
             alt="柯兴科技品牌视觉"
             loading="lazy"
             decoding="async"
-            className="h-full w-full rounded-3xl border border-white/10 object-cover"
+            className="h-full w-full rounded-3xl border border-emerald-200/20 object-cover"
           />
         </div>
       </div>
@@ -497,7 +497,7 @@ function Services() {
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="group rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-1 hover:border-emerald-400/40 hover:bg-white/[0.07]"
+              className="group rounded-3xl border border-emerald-100/10 bg-white/[0.03] p-6 transition hover:-translate-y-1 hover:border-emerald-300/40 hover:bg-emerald-300/[0.06]"
             >
               <div className="inline-flex rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-3 text-emerald-300">{item.icon}</div>
               <h3 className="mt-4 text-xl font-bold text-white">{item.title}</h3>
@@ -530,13 +530,13 @@ function Cases() {
   ];
 
   return (
-    <section id="cases" className="border-y border-white/5 bg-white/[0.02] py-20">
+    <section id="cases" className="border-y border-emerald-100/8 bg-emerald-950/[0.16] py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">案例场景</h2>
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
           {data.map((item) => (
-            <div key={item.title} className="rounded-3xl border border-white/10 bg-slate-900/80 p-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-200">
+            <div key={item.title} className="rounded-3xl border border-emerald-200/15 bg-[#07211b]/80 p-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/35 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100">
                 {item.icon} 项目场景
               </div>
               <h3 className="mt-4 text-xl font-bold text-white">{item.title}</h3>
@@ -567,7 +567,7 @@ function Profile() {
     <section id="profile" className="py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">企业经营信息</h2>
-        <div className="mt-8 grid gap-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:grid-cols-2 md:p-8">
+        <div className="mt-8 grid gap-6 rounded-3xl border border-emerald-200/15 bg-emerald-950/[0.18] p-6 md:grid-cols-2 md:p-8">
           <div className="space-y-3 text-sm leading-7 text-slate-300">
             <p><span className="text-slate-400">企业名称：</span>柯兴科技（深圳）有限公司</p>
             <p><span className="text-slate-400">统一社会信用代码：</span>91440300MA5H0HLK5U</p>
@@ -587,7 +587,7 @@ function Profile() {
 
         <div className="mt-6 flex flex-wrap gap-2">
           {tags.map((tag) => (
-            <span key={tag} className="rounded-full border border-white/15 bg-slate-900 px-3 py-1 text-xs text-slate-200">
+            <span key={tag} className="rounded-full border border-emerald-200/20 bg-[#072018] px-3 py-1 text-xs text-slate-200">
               {tag}
             </span>
           ))}
@@ -601,7 +601,7 @@ function Contact() {
   return (
     <section id="contact" className="pb-20 pt-6">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-6 rounded-3xl border border-emerald-400/30 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 p-8 md:grid-cols-2 md:items-center md:p-10">
+        <div className="grid gap-6 rounded-3xl border border-emerald-300/35 bg-gradient-to-r from-emerald-500/14 to-green-300/10 p-8 md:grid-cols-2 md:items-center md:p-10">
           <div>
             <h2 className="text-3xl font-black tracking-tight text-white">欢迎咨询合作</h2>
             <p className="mt-3 text-slate-200">
@@ -625,7 +625,7 @@ function Contact() {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/10 py-8">
+    <footer className="border-t border-emerald-200/15 py-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-sm text-slate-400 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="柯兴科技" className="h-8 w-auto" />
@@ -639,7 +639,7 @@ function Footer() {
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen text-white">
       <a
         href="#main-content"
         className="sr-only z-[60] rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-slate-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"

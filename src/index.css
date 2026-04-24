@@ -8,13 +8,35 @@ html {
   scroll-behavior: smooth;
 }
 
+:root {
+  --brand-ink: #02110f;
+  --brand-deep: #06211b;
+  --brand-green: #21b883;
+  --brand-green-soft: #8af4cf;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: radial-gradient(circle at top, #0f172a 0%, #020617 45%, #020617 100%);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(33, 184, 131, 0.18), transparent 34%),
+    radial-gradient(circle at 88% 20%, rgba(88, 216, 185, 0.14), transparent 36%),
+    radial-gradient(circle at 50% 110%, rgba(10, 68, 54, 0.2), transparent 42%),
+    linear-gradient(180deg, #03110e 0%, #031512 44%, #020b09 100%);
   color: #e2e8f0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(105, 236, 197, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(105, 236, 197, 0.05) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at 50% 45%, black 22%, transparent 78%);
+  opacity: 0.35;
 }
 
 * {
