@@ -9,20 +9,20 @@ html {
 }
 
 :root {
-  --brand-ink: #02110f;
-  --brand-deep: #06211b;
-  --brand-green: #21b883;
-  --brand-green-soft: #8af4cf;
+  --brand-ink: #050a16;
+  --brand-deep: #0b1530;
+  --brand-primary: #22d3ee;
+  --brand-primary-soft: #93c5fd;
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
   background:
-    radial-gradient(circle at 10% 10%, rgba(74, 222, 128, 0.2), transparent 34%),
-    radial-gradient(circle at 90% 18%, rgba(52, 211, 153, 0.16), transparent 38%),
-    radial-gradient(circle at 50% 118%, rgba(6, 78, 59, 0.22), transparent 44%),
-    linear-gradient(180deg, #020c09 0%, #031612 42%, #020b09 100%);
+    radial-gradient(circle at 10% 10%, rgba(34, 211, 238, 0.18), transparent 34%),
+    radial-gradient(circle at 90% 18%, rgba(59, 130, 246, 0.16), transparent 38%),
+    radial-gradient(circle at 50% 118%, rgba(37, 99, 235, 0.18), transparent 44%),
+    linear-gradient(180deg, #040916 0%, #061227 42%, #050915 100%);
   color: #e2e8f0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -34,8 +34,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(165, 243, 214, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(165, 243, 214, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(103, 232, 249, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(103, 232, 249, 0.05) 1px, transparent 1px);
   background-size: 38px 38px;
   mask-image: radial-gradient(circle at 50% 45%, black 24%, transparent 80%);
   opacity: 0.32;
@@ -64,6 +64,6 @@ body::before {
 }
 
 ::selection {
-  background: rgba(16, 185, 129, 0.35);
+  background: rgba(34, 211, 238, 0.35);
   color: #ecfeff;
 }
