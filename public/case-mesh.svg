@@ -1,0 +1,26 @@
+<svg width="1400" height="800" viewBox="0 0 1400 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#040B1F"/>
+      <stop offset="1" stop-color="#071730"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="190" y1="170" x2="1200" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D3EE" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="800" fill="url(#bg)"/>
+  <g opacity="0.36">
+    <path d="M180 150L530 90L880 190L1220 130L1200 390L850 430L500 350L200 420L180 150Z" stroke="url(#edge)" stroke-width="2"/>
+    <path d="M250 290L560 240L890 320L1180 260L1160 520L870 580L540 520L260 580L250 290Z" stroke="url(#edge)" stroke-width="2"/>
+    <path d="M300 440L590 390L900 460L1130 410L1110 640L880 700L570 650L300 700L300 440Z" stroke="url(#edge)" stroke-width="2"/>
+  </g>
+  <g opacity="0.5">
+    <circle cx="530" cy="90" r="5" fill="#67E8F9"/>
+    <circle cx="880" cy="190" r="5" fill="#67E8F9"/>
+    <circle cx="850" cy="430" r="5" fill="#67E8F9"/>
+    <circle cx="560" cy="240" r="5" fill="#93C5FD"/>
+    <circle cx="890" cy="320" r="5" fill="#93C5FD"/>
+    <circle cx="870" cy="580" r="5" fill="#93C5FD"/>
+  </g>
+</svg>

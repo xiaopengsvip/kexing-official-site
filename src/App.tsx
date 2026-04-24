@@ -43,6 +43,8 @@ type SiteCopy = {
   };
   services: { title: string; desc: string; cta: string; items: Array<{ title: string; desc: string }> };
   cases: { title: string; items: Array<{ title: string; intro: string }> };
+  process: { title: string; steps: Array<{ title: string; desc: string }> };
+  faq: { title: string; items: Array<{ q: string; a: string }> };
   profile: {
     title: string;
     fieldsLeft: Array<{ label: string; value: string }>;
@@ -109,6 +111,23 @@ const copy: Record<Locale, SiteCopy> = {
         { title: '智慧酒店客控升级', intro: '完成客房灯光/温控/场景联动与后台管理系统整合，缩短运维响应时间。' },
         { title: '园区网络与安防系统集成', intro: '实现监控、门禁、网络与机房系统统一建设，提升管理效率与稳定性。' },
         { title: '品牌官网与业务展示平台', intro: '通过全新视觉体系与信息架构优化，提升品牌识别与咨询转化效率。' },
+      ],
+    },
+    process: {
+      title: '项目推进流程',
+      steps: [
+        { title: '需求诊断', desc: '梳理现状系统、业务目标与预算边界，形成可执行范围。' },
+        { title: '方案设计', desc: '输出信息架构、技术架构、视觉方案与里程碑计划。' },
+        { title: '敏捷交付', desc: '按周迭代开发与联调，持续验收，确保上线质量。' },
+        { title: '运维优化', desc: '上线后提供监控、告警与持续优化支持。' },
+      ],
+    },
+    faq: {
+      title: '常见问题',
+      items: [
+        { q: '是否支持中英文官网？', a: '支持，当前站点已具备中英文切换和多语言内容结构。' },
+        { q: '能否同时做工程与软件系统？', a: '可以，柯兴采用“弱电工程 + 软件研发 + AI应用”协同交付。' },
+        { q: '项目周期一般多久？', a: '通常 2-8 周，取决于页面范围、系统联动复杂度与验收标准。' },
       ],
     },
     profile: {
@@ -206,6 +225,23 @@ const copy: Record<Locale, SiteCopy> = {
         { title: 'Smart hotel control upgrade', intro: 'Integrated room lighting, temperature and scene controls with central management to shorten response time.' },
         { title: 'Campus network & security integration', intro: 'Unified surveillance, access, network and server systems to improve stability and management efficiency.' },
         { title: 'Official brand website platform', intro: 'Improved identity consistency and inquiry conversion through upgraded visual system and information architecture.' },
+      ],
+    },
+    process: {
+      title: 'Delivery Workflow',
+      steps: [
+        { title: 'Discovery', desc: 'Clarify business goals, current systems and project boundaries.' },
+        { title: 'Solution Design', desc: 'Define IA, technical architecture, visual system and milestones.' },
+        { title: 'Agile Delivery', desc: 'Iterative development and integration with staged acceptance.' },
+        { title: 'Operations Optimization', desc: 'Post-launch monitoring, alerting and continuous improvements.' },
+      ],
+    },
+    faq: {
+      title: 'Frequently Asked Questions',
+      items: [
+        { q: 'Do you support bilingual websites?', a: 'Yes. This website includes bilingual structure and language switching.' },
+        { q: 'Can you deliver engineering and software together?', a: 'Yes. Kexing delivers low-voltage engineering, software and AI as one solution.' },
+        { q: 'How long does a project usually take?', a: 'Typically 2-8 weeks depending on scope, integration complexity and acceptance standards.' },
       ],
     },
     profile: {
@@ -387,8 +423,9 @@ function Hero({ locale }: { locale: Locale }) {
       <div className="liquid-orb liquid-orb--a" />
       <div className="liquid-orb liquid-orb--b" />
       <div className="liquid-orb liquid-orb--c" />
+      <img src="/hero-liquid.svg" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45 mix-blend-screen" />
 
-      <div className="mx-auto grid max-w-7xl gap-9 px-4 pb-18 sm:px-6 lg:grid-cols-12 lg:px-8 lg:pb-24">
+      <div className="relative z-10 mx-auto grid max-w-7xl gap-9 px-4 pb-18 sm:px-6 lg:grid-cols-12 lg:px-8 lg:pb-24">
         <div className="lg:col-span-7">
           <motion.span initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="liquid-chip inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold tracking-widest text-cyan-100">
             <Sparkles className="h-3.5 w-3.5" /> {t.badge}
@@ -671,8 +708,9 @@ function Cases({ locale }: { locale: Locale }) {
   const icons = [MonitorSmartphone, Network, Building2];
 
   return (
-    <section id="cases" className="border-y border-white/8 bg-black/15 py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section id="cases" className="relative overflow-hidden border-y border-white/8 bg-black/15 py-20">
+      <img src="/case-mesh.svg" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
           {t.items.map((item, index) => {
@@ -687,6 +725,56 @@ function Cases({ locale }: { locale: Locale }) {
               </div>
             );
           })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProcessSection({ locale }: { locale: Locale }) {
+  const t = copy[locale].process;
+
+  return (
+    <section className="py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
+        <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {t.steps.map((step, index) => (
+            <motion.article
+              key={step.title}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.06 }}
+              viewport={{ once: true, amount: 0.2 }}
+              className="liquid-panel rounded-2xl p-5"
+            >
+              <span className="liquid-chip inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-xs font-bold text-cyan-100">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <h3 className="mt-4 text-lg font-semibold text-white">{step.title}</h3>
+              <p className="mt-2 text-sm leading-7 text-slate-300">{step.desc}</p>
+            </motion.article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FaqSection({ locale }: { locale: Locale }) {
+  const t = copy[locale].faq;
+
+  return (
+    <section className="pb-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
+        <div className="mt-8 space-y-4">
+          {t.items.map((item) => (
+            <details key={item.q} className="liquid-panel group rounded-2xl p-5" open>
+              <summary className="cursor-pointer list-none text-base font-semibold text-slate-100">{item.q}</summary>
+              <p className="mt-3 text-sm leading-7 text-slate-300">{item.a}</p>
+            </details>
+          ))}
         </div>
       </div>
     </section>
@@ -766,7 +854,18 @@ export default function App() {
   const [locale, setLocale] = useState<Locale>('zh');
 
   useEffect(() => {
+    const stored = window.localStorage.getItem('kexing-locale');
+    if (stored === 'zh' || stored === 'en') {
+      setLocale(stored);
+      return;
+    }
+    const preferred = navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    setLocale(preferred);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+    window.localStorage.setItem('kexing-locale', locale);
   }, [locale]);
 
   const t = copy[locale];
@@ -782,7 +881,9 @@ export default function App() {
         <HtmlIn3DLab locale={locale} />
         <Services locale={locale} />
         <Cases locale={locale} />
+        <ProcessSection locale={locale} />
         <Profile locale={locale} />
+        <FaqSection locale={locale} />
         <Contact locale={locale} />
       </main>
       <Footer locale={locale} />
