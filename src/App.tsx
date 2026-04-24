@@ -222,32 +222,91 @@ function HtmlIn3DLab() {
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 100);
-    camera.position.set(0, 0.2, 4.2);
+    const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 100);
+    camera.position.set(0, 0.2, 4.6);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-    const directional = new THREE.DirectionalLight(0x89f5d1, 1.2);
-    directional.position.set(2, 2, 3);
-    scene.add(ambient, directional);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+    const key = new THREE.DirectionalLight(0x9dfce2, 1.15);
+    key.position.set(2.6, 2.2, 3.2);
+    const rim = new THREE.PointLight(0x22d3ee, 0.8, 12);
+    rim.position.set(-2, -1, 2.5);
+    scene.add(ambient, key, rim);
 
-    const knot = new THREE.Mesh(
-      new THREE.TorusKnotGeometry(1.05, 0.28, 240, 28),
-      new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.35, roughness: 0.28 }),
+    const logoGroup = new THREE.Group();
+    scene.add(logoGroup);
+
+    const logoTexture = new THREE.TextureLoader().load('/favicon.png');
+    logoTexture.colorSpace = THREE.SRGBColorSpace;
+
+    const logoCoreMaterial = new THREE.MeshStandardMaterial({
+      map: logoTexture,
+      transparent: true,
+      alphaTest: 0.1,
+      emissive: new THREE.Color(0x35f5bf),
+      emissiveIntensity: 0.22,
+      metalness: 0.12,
+      roughness: 0.3,
+      side: THREE.DoubleSide,
+    });
+
+    const logoCore = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 1.55), logoCoreMaterial);
+    logoCore.position.set(0, 0, 0.25);
+    logoGroup.add(logoCore);
+
+    const logoBack = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.95, 1.95),
+      new THREE.MeshBasicMaterial({
+        map: logoTexture,
+        transparent: true,
+        opacity: 0.24,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
     );
-    scene.add(knot);
+    logoBack.position.set(0, 0, -0.12);
+    logoGroup.add(logoBack);
+
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.55, 0.05, 24, 180),
+      new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x0c7a58, metalness: 0.35, roughness: 0.25 }),
+    );
+    ring.rotation.x = Math.PI * 0.5;
+    logoGroup.add(ring);
+
+    const satellites: THREE.Sprite[] = [];
+    const satelliteMaterial = new THREE.SpriteMaterial({ map: logoTexture, color: 0xd1fae5, transparent: true, opacity: 0.85 });
+    for (let i = 0; i < 16; i += 1) {
+      const sprite = new THREE.Sprite(satelliteMaterial.clone());
+      const radius = 1.9 + (i % 4) * 0.25;
+      const angle = (i / 16) * Math.PI * 2;
+      sprite.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.62, (i % 3) * 0.2 - 0.3);
+      const s = 0.2 + (i % 5) * 0.03;
+      sprite.scale.set(s, s, 1);
+      satellites.push(sprite);
+      scene.add(sprite);
+    }
 
     const anchors = [
-      { pos: new THREE.Vector3(-1.6, 1.0, 0.2), el: null as HTMLElement | null },
-      { pos: new THREE.Vector3(1.55, 0.7, 0.4), el: null as HTMLElement | null },
-      { pos: new THREE.Vector3(-0.7, -1.35, 0.6), el: null as HTMLElement | null },
-      { pos: new THREE.Vector3(1.2, -1.15, -0.2), el: null as HTMLElement | null },
+      { pos: new THREE.Vector3(-1.95, 1.2, 0.35), el: null as HTMLElement | null },
+      { pos: new THREE.Vector3(1.95, 1.0, 0.3), el: null as HTMLElement | null },
+      { pos: new THREE.Vector3(-1.65, -1.35, 0.45), el: null as HTMLElement | null },
+      { pos: new THREE.Vector3(1.7, -1.2, -0.05), el: null as HTMLElement | null },
     ];
 
     anchors.forEach((item, index) => {
       item.el = overlay.querySelector(`[data-anchor="${index}"]`) as HTMLElement | null;
     });
+
+    const pointer = new THREE.Vector2(0, 0);
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    };
 
     const resize = () => {
       const { clientWidth, clientHeight } = canvas;
@@ -261,18 +320,34 @@ function HtmlIn3DLab() {
     const clock = new THREE.Clock();
     const run = () => {
       const t = clock.getElapsedTime();
-      knot.rotation.x = t * 0.22;
-      knot.rotation.y = t * 0.48;
-      knot.position.y = Math.sin(t * 0.8) * 0.08;
+
+      logoGroup.rotation.y = t * 0.42;
+      logoGroup.rotation.x = Math.sin(t * 0.6) * 0.15;
+      logoGroup.position.y = Math.sin(t * 0.95) * 0.12;
+      ring.rotation.z = t * 0.56;
+      logoBack.rotation.z = -t * 0.2;
+
+      camera.position.x = THREE.MathUtils.lerp(camera.position.x, pointer.x * 0.36, 0.06);
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0.2 + pointer.y * 0.2, 0.06);
+      camera.lookAt(0, 0, 0);
+
+      satellites.forEach((item, index) => {
+        const speed = 0.14 + (index % 5) * 0.028;
+        const radius = 1.85 + (index % 4) * 0.24;
+        const a = t * speed + (index / satellites.length) * Math.PI * 2;
+        item.position.x = Math.cos(a) * radius;
+        item.position.y = Math.sin(a) * (radius * 0.62);
+        item.position.z = Math.sin(t * 0.8 + index) * 0.35;
+      });
 
       anchors.forEach((item) => {
         if (!item.el) return;
         const projected = item.pos.clone().project(camera);
         const x = (projected.x * 0.5 + 0.5) * canvas.clientWidth;
         const y = (-projected.y * 0.5 + 0.5) * canvas.clientHeight;
-        const depth = Math.max(0, Math.min(1, 1 - projected.z * 0.3));
-        item.el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${0.85 + depth * 0.25})`;
-        item.el.style.opacity = projected.z > 1 ? '0' : '1';
+        const depth = Math.max(0, Math.min(1, 1 - projected.z * 0.4));
+        item.el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${0.84 + depth * 0.24})`;
+        item.el.style.opacity = projected.z > 1.05 ? '0' : '1';
       });
 
       renderer.render(scene, camera);
@@ -281,21 +356,30 @@ function HtmlIn3DLab() {
 
     raf = window.requestAnimationFrame(run);
     window.addEventListener('resize', resize);
+    canvas.addEventListener('pointermove', handlePointerMove);
 
     return () => {
       window.cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
-      knot.geometry.dispose();
-      (knot.material as THREE.Material).dispose();
+      canvas.removeEventListener('pointermove', handlePointerMove);
+      logoCore.geometry.dispose();
+      logoBack.geometry.dispose();
+      ring.geometry.dispose();
+      logoCoreMaterial.dispose();
+      (logoBack.material as THREE.Material).dispose();
+      (ring.material as THREE.Material).dispose();
+      satellites.forEach((item) => {
+        item.material.dispose();
+      });
       renderer.dispose();
     };
   }, []);
 
   const labCards = [
-    { title: 'DOM 卡片上浮', desc: '原生 HTML 卡片实时投影到 3D 场景，保持可选中文本与按钮交互。' },
-    { title: 'Three.js 光效', desc: '使用 WebGL 几何体+灯光做实时动效，强化品牌科技感。' },
-    { title: '实验性方向', desc: '后续可升级到 WICG HTML-in-Canvas / WebGPU 能力。' },
-    { title: '业务可落地', desc: '可用于产品展示、发布会页面、互动导览与可视化中枢。' },
+    { title: 'Logo 驱动 3D 主体', desc: '以品牌纯图标为主视觉，构建旋转核心体与多层发光背板。' },
+    { title: '品牌粒子环绕', desc: '使用 Logo 精灵作为轨道粒子，形成具辨识度的品牌宇宙动效。' },
+    { title: 'DOM 与 3D 同步', desc: '信息卡保持原生 HTML 可读性，同时跟随 3D 空间锚点运动。' },
+    { title: '可继续扩展', desc: '可增加点击飞行、Logo 变形、WebGPU 材质与发布会级互动。' },
   ];
 
   return (
@@ -303,25 +387,25 @@ function HtmlIn3DLab() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">3D 互动实验区（HTML x WebGL）</h2>
+            <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">3D 实验玩法（Logo 主题）</h2>
             <p className="mt-3 max-w-3xl text-slate-300">
-              借鉴你提到的“HTML 进入 3D”思路，先落地一版可在线运行的实验模块：3D 场景实时渲染，DOM 信息卡作为交互层叠加与跟随。
+              采用你的品牌 Logo 作为 3D 设计核心：中轴主 Logo + 环绕粒子 + HTML 信息层，让“品牌识别”直接成为互动体验本身。
             </p>
           </div>
           <span className="hidden rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 md:inline-block">
-            Experimental
+            Brand Motion Lab
           </span>
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-3 md:p-4">
-          <div className="relative h-[440px] overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.16),rgba(2,6,23,0.9)_55%)]">
-            <canvas ref={canvasRef} className="h-full w-full" aria-label="3D交互演示画布" />
+          <div className="relative h-[460px] overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.22),rgba(2,6,23,0.92)_58%)]">
+            <canvas ref={canvasRef} className="h-full w-full" aria-label="Logo主题3D交互演示画布" />
             <div ref={overlayRef} className="pointer-events-none absolute inset-0">
               {labCards.map((card, index) => (
                 <article
                   key={card.title}
                   data-anchor={index}
-                  className="pointer-events-auto absolute left-0 top-0 w-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/15 bg-slate-950/80 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur"
+                  className="pointer-events-auto absolute left-0 top-0 w-48 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/15 bg-slate-950/82 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur"
                 >
                   <h3 className="text-sm font-semibold text-emerald-300">{card.title}</h3>
                   <p className="mt-1 text-xs leading-5 text-slate-300">{card.desc}</p>
