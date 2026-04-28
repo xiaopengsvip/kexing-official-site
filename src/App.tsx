@@ -1,892 +1,791 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import * as THREE from 'three';
-import {
-  ArrowRight,
-  Bot,
-  Building2,
-  Cable,
-  ChevronRight,
-  Cloud,
-  Cpu,
-  Globe,
-  Hotel,
-  Languages,
-  Menu,
-  MonitorSmartphone,
-  Network,
-  ShieldCheck,
-  Sparkles,
-  X,
-} from 'lucide-react';
 
-type Locale = 'zh' | 'en';
-type NavLink = { name: string; href: string };
-
-type SiteCopy = {
-  nav: { home: string; lab3d: string; services: string; cases: string; profile: string; contact: string; cta: string; labTag: string };
-  hero: {
-    badge: string;
-    title1: string;
-    title2: string;
-    desc: string;
-    ctaPrimary: string;
-    ctaSecondary: string;
-    stats: Array<{ label: string; value: string }>;
-    sideDesc: string;
-  };
-  lab3d: {
-    title: string;
-    desc: string;
-    badge: string;
-    cards: Array<{ title: string; desc: string }>;
-  };
-  services: { title: string; desc: string; cta: string; items: Array<{ title: string; desc: string }> };
-  cases: { title: string; items: Array<{ title: string; intro: string }> };
-  process: { title: string; steps: Array<{ title: string; desc: string }> };
-  faq: { title: string; items: Array<{ q: string; a: string }> };
-  profile: {
-    title: string;
-    fieldsLeft: Array<{ label: string; value: string }>;
-    fieldsRight: Array<{ label: string; value: string }>;
-    tags: string[];
-  };
-  contact: { title: string; desc: string; domainLabel: string; business: string; backTop: string };
-  footer: { company: string; code: string; skip: string };
+type LiveData = {
+  backendOk: boolean;
+  backendStatus: string;
+  apiRttMs: number;
+  apiDocEndpoints: number;
+  online: boolean;
+  downlinkMbps: number;
+  fps: number;
+  updatedAt: string;
 };
 
-const copy: Record<Locale, SiteCopy> = {
+type NavigatorWithConnection = Navigator & {
+  connection?: {
+    downlink?: number;
+  };
+};
+
+type RegionRow = {
+  region: string;
+  code: string;
+  traffic: string;
+  latencyMs: number;
+  availability: string;
+  load: number;
+  risk: 'low' | 'medium' | 'high';
+  owner: string;
+};
+
+type EventRow = {
+  id: string;
+  time: string;
+  level: 'INFO' | 'WARN' | 'CRIT';
+  source: string;
+  message: string;
+  endpoint: string;
+};
+
+type KpiCard = {
+  label: string;
+  sub: string;
+  value: string;
+  trend: string;
+  accent: 'blue' | 'cyan' | 'violet' | 'amber';
+  spark: number[];
+};
+
+type HealthItem = {
+  name: string;
+  value: string;
+  score: number;
+  state: 'stable' | 'watch' | 'risk';
+};
+
+type Lang = 'zh' | 'en';
+
+const copy = {
   zh: {
-    nav: {
-      home: '首页',
-      lab3d: '3D实验',
-      services: '解决方案',
-      cases: '行业案例',
-      profile: '企业信息',
-      contact: '联系我们',
-      cta: '商务咨询',
-      labTag: 'Brand Motion Lab',
-    },
-    hero: {
-      badge: '品牌官网全新升级',
-      title1: '让品牌识别、',
-      title2: '数字能力与业务转化协同增长',
-      desc: '柯兴科技以“弱电工程 + 软件研发 + AI应用”一体化交付为核心，面向企业、园区、酒店等场景提供可持续迭代的数智化解决方案。',
-      ctaPrimary: '查看解决方案',
-      ctaSecondary: '浏览行业案例',
-      stats: [
-        { label: '公司成立', value: '2021' },
-        { label: '注册资本', value: '500万' },
-        { label: '交付模型', value: '工程+软件+AI' },
-      ],
-      sideDesc: '从品牌官网到业务系统，从智能工程到AI应用，围绕“可展示、可运营、可扩展”目标打造企业数字化底座。',
-    },
-    lab3d: {
-      title: '3D 实验玩法（Logo 主题）',
-      desc: '采用品牌 Logo 作为核心素材，构建“主图形 + 环绕粒子 + 内容卡片投影”的品牌动效系统，兼顾视觉冲击与信息表达。',
-      badge: 'Experimental / WebGL + DOM',
-      cards: [
-        { title: 'Logo 驱动主视觉', desc: '将品牌图标转为3D核心材质，强化识别度与记忆点。' },
-        { title: '粒子与轨道光环', desc: '构建环绕动效系统，让页面在停留时持续传达品牌活性。' },
-        { title: 'HTML + 3D 同层表达', desc: '内容保持原生 DOM 可读性，同时获得沉浸式空间表现。' },
-        { title: '可扩展发布会动效', desc: '后续可接入点击飞行、场景切换和交互式产品讲解。' },
-      ],
-    },
-    services: {
-      title: '解决方案矩阵',
-      desc: '工程实施能力与软件研发能力并行，形成可复制、可持续、可运营的交付体系。',
-      cta: '获取定制方案',
-      items: [
-        { title: '弱电与智能化工程', desc: '覆盖综合布线、安防监控、门禁对讲、机房与网络系统集成，支持设计、施工、调试、验收全流程。' },
-        { title: '智慧酒店客控系统', desc: '围绕客房灯光、空调、窗帘、情景面板与后台管理联动，提升宾客体验与酒店运营效率。' },
-        { title: '企业官网与系统开发', desc: '基于主流前端技术栈打造品牌官网、业务系统与数据看板，兼顾视觉表现与业务可用性。' },
-        { title: 'AI 应用落地服务', desc: '提供 AI 能力接入、业务流程自动化和智能助手定制，帮助企业构建可持续智能化能力。' },
-        { title: '云与数据服务', desc: '提供数据处理、云计算技术服务与系统运维支持，保障业务连续性与系统稳定运行。' },
-        { title: '信息安全与合规建设', desc: '支持网络安全软件部署、信息安全设备集成与安全能力提升，强化企业数字资产防护。' },
-      ],
-    },
-    cases: {
-      title: '行业案例场景',
-      items: [
-        { title: '智慧酒店客控升级', intro: '完成客房灯光/温控/场景联动与后台管理系统整合，缩短运维响应时间。' },
-        { title: '园区网络与安防系统集成', intro: '实现监控、门禁、网络与机房系统统一建设，提升管理效率与稳定性。' },
-        { title: '品牌官网与业务展示平台', intro: '通过全新视觉体系与信息架构优化，提升品牌识别与咨询转化效率。' },
-      ],
-    },
-    process: {
-      title: '项目推进流程',
-      steps: [
-        { title: '需求诊断', desc: '梳理现状系统、业务目标与预算边界，形成可执行范围。' },
-        { title: '方案设计', desc: '输出信息架构、技术架构、视觉方案与里程碑计划。' },
-        { title: '敏捷交付', desc: '按周迭代开发与联调，持续验收，确保上线质量。' },
-        { title: '运维优化', desc: '上线后提供监控、告警与持续优化支持。' },
-      ],
-    },
-    faq: {
-      title: '常见问题',
-      items: [
-        { q: '是否支持中英文官网？', a: '支持，当前站点已具备中英文切换和多语言内容结构。' },
-        { q: '能否同时做工程与软件系统？', a: '可以，柯兴采用“弱电工程 + 软件研发 + AI应用”协同交付。' },
-        { q: '项目周期一般多久？', a: '通常 2-8 周，取决于页面范围、系统联动复杂度与验收标准。' },
-      ],
-    },
-    profile: {
-      title: '企业经营信息',
-      fieldsLeft: [
-        { label: '企业名称', value: '柯兴科技（深圳）有限公司' },
-        { label: '统一社会信用代码', value: '91440300MA5H0HLK5U' },
-        { label: '成立日期', value: '2021-09-22' },
-        { label: '法定代表人', value: '葛亚鹏' },
-        { label: '注册资本', value: '500万元' },
-      ],
-      fieldsRight: [
-        { label: '企业状态', value: '存续' },
-        { label: '所属行业', value: '信息传输、软件和信息技术服务业' },
-        { label: '注册地址', value: '深圳市罗湖区笋岗街道田心社区宝安北路3008号宝能中心E栋18层05' },
-      ],
-      tags: [
-        '计算机系统服务',
-        '信息系统集成服务',
-        '人工智能应用软件开发',
-        '智能控制系统集成',
-        '网络与信息安全软件开发',
-        '物联网技术服务',
-        '云计算装备技术服务',
-        '数据处理和存储支持服务',
-        '数字文化创意软件开发',
-        '建设工程施工（许可）',
-      ],
-    },
-    contact: {
-      title: '欢迎咨询合作',
-      desc: '如果你正在规划弱电智能化、酒店客控、品牌官网或 AI 应用项目，欢迎与我们联系，我们将在 24 小时内响应。',
-      domainLabel: '官网地址',
-      business: '业务方向：弱电工程 / 软件开发 / AI 应用',
-      backTop: '返回顶部',
-    },
-    footer: {
-      company: '柯兴科技（深圳）有限公司',
-      code: '统一社会信用代码：91440300MA5H0HLK5U',
-      skip: '跳转到主要内容',
-    },
+    htmlLang: 'zh-CN', locale: 'zh-CN', brand: '柯兴全球运维中心 / 实时指挥', title: '世界运营中心数据大屏',
+    subtitle: '自适应全屏版：支持一键全屏、中英文切换，桌面大屏首屏完整呈现，移动设备自动重排。',
+    api: '接口', latency: '时延', fps: '帧率', full: '全屏显示', exitFull: '退出全屏', language: 'English',
+    loadingTitle: '柯兴世界运营中心', loadingSub: '正在接入全球链路、接口探针与实时指挥视图', loadingStepA: '身份徽标校验', loadingStepB: '真实地球模型预热', loadingStepC: '运维探针同步', loadingStepD: '指挥大屏就绪',
+    command: '运营指挥摘要', ops: '综合运行态势', opsSub: '综合运行态势评分', posture: '双活路由 · 灰度保护 · WAF 已校验 · 自愈策略已启用', shift: '当前值班组', shiftWindow: '接管窗口 08:00-20:00',
+    regionTitle: '区域服务矩阵', regionSub: '分区业务承载 / SLA / 风险', region: '区域', traffic: '流量', rtt: '时延', risk: '风险',
+    capacity: '容量分配', capacitySub: '计算 / 网络 / 存储', compute: '计算资源', network: '网络资源', storage: '存储资源',
+    topology: '全球实时业务链路拓扑', topologySub: '真实地球模型 · 三层轨道环 · 航线飞线 · 可切换运维焦点', lastSync: '最近同步',
+    feed: '运维事件流', feedSub: '真实探针数据 / 10 秒刷新', healthProbe: '真实接口健康探针', docsProbe: '真实接口目录镜像', clientProbe: '浏览器在线遥测',
+    waitingProbe: '等待真实探针', waitingMessage: '正在等待首轮真实接口健康探针、接口目录镜像和浏览器在线遥测返回。',
+    healthStackApi: '接口健康', docsIndex: '目录索引', networkOnline: '网络在线', clientDownlink: '客户端下行', stable: '稳定', degraded: '降级', online: '在线', offline: '离线',
+    queue: '响应队列', queueSub: '事件分级与处理进度', confirmed: '已确认', processing: '处理中', review: '待复核', normal: '正常',
+    services: '服务模块状态', footerSource: '数据源：v.api.allapple.top 健康探针 + 接口文档镜像 + 浏览器遥测', entry: '线上入口：https://dps.allapple.top',
+    methods: '个方法', endpoints: '个端点', activeTasks: '项活跃任务', indexed: '个接口已索引', securityZero: '关键风险 0 项', degradedMode: '降级防护模式',
+    kpiSessions: '全网活跃会话', kpiSessionsSub: '实时在线与会话保持', kpiThroughput: '全球业务吞吐', kpiThroughputSub: '入口带宽与跨区转发', kpiNodes: '在线边缘节点', kpiNodesSub: '全球节点与文档索引', kpiSecurity: '安全放行成功率', kpiSecuritySub: 'WAF / TLS / Bot 综合命中',
+    primary: '主用链路', failover: '容灾链路', security: '安全包络', primaryPath: '北京 → 新加坡 → 法兰克福', primaryMeta: '平均 38.2ms · 低延迟优先', failoverPath: '弗吉尼亚 → 圣保罗 → 悉尼', failoverMeta: '热备待命 · 自动切换', securityPath: 'WAF / Bot / TLS 防护态势', securityMeta: '风险收敛中',
+    info: '通知', warn: '关注', crit: '关键', probeOk: '返回状态', probeRtt: '端到端 RTT', probeFrom: '数据来自 v.api.allapple.top 实时健康检查。', docsMessageA: '接口文档镜像本次解析到', docsMessageB: '个方法标记，用于校验 API 目录可用性。', clientMessageA: '客户端在线状态', clientMessageB: '浏览器估算下行',
   },
   en: {
-    nav: {
-      home: 'Home',
-      lab3d: '3D Lab',
-      services: 'Solutions',
-      cases: 'Cases',
-      profile: 'Company',
-      contact: 'Contact',
-      cta: 'Business Inquiry',
-      labTag: 'Brand Motion Lab',
-    },
-    hero: {
-      badge: 'Official Website Upgraded',
-      title1: 'Unify brand identity,',
-      title2: 'digital capability and business conversion',
-      desc: 'Kexing Technology delivers integrated Low-Voltage Engineering + Software R&D + AI Applications for enterprise, campus and hospitality scenarios.',
-      ctaPrimary: 'View Solutions',
-      ctaSecondary: 'Explore Cases',
-      stats: [
-        { label: 'Founded', value: '2021' },
-        { label: 'Registered Capital', value: 'RMB 5M' },
-        { label: 'Delivery Model', value: 'Engineering + Software + AI' },
-      ],
-      sideDesc: 'From official websites to business systems, from intelligent engineering to AI applications — built for visibility, operations and scale.',
-    },
-    lab3d: {
-      title: '3D Experience (Logo Mode)',
-      desc: 'Using the brand logo as the core material, this scene combines key visual geometry, orbital particles and projected content cards.',
-      badge: 'Experimental / WebGL + DOM',
-      cards: [
-        { title: 'Logo-driven visual center', desc: 'Transforms the brand icon into a live 3D core for stronger recognition.' },
-        { title: 'Particle & orbital halo', desc: 'Builds a motion system that keeps the page alive while users browse.' },
-        { title: 'HTML + 3D co-layering', desc: 'Maintains native DOM readability while adding immersive spatial expression.' },
-        { title: 'Expandable launch-stage mode', desc: 'Ready for camera flights, scene transitions and interactive storytelling.' },
-      ],
-    },
-    services: {
-      title: 'Solution Matrix',
-      desc: 'Engineering delivery and software R&D run in parallel to form a repeatable and scalable delivery model.',
-      cta: 'Get Custom Plan',
-      items: [
-        { title: 'Low-voltage & intelligent engineering', desc: 'Cabling, surveillance, access control, server room and network integration from design to acceptance.' },
-        { title: 'Smart hotel guest control', desc: 'Integrates lighting, HVAC, curtains and scene panels with management systems for better experience and efficiency.' },
-        { title: 'Corporate websites & systems', desc: 'Builds modern websites, business systems and dashboards with both visual quality and operational usability.' },
-        { title: 'AI application delivery', desc: 'Integrates AI capabilities, automation and assistants into practical business workflows.' },
-        { title: 'Cloud & data services', desc: 'Provides data processing, cloud support and operations services for continuity and stability.' },
-        { title: 'Security & compliance enablement', desc: 'Deploys security software and devices to strengthen enterprise digital asset protection.' },
-      ],
-    },
-    cases: {
-      title: 'Industry Cases',
-      items: [
-        { title: 'Smart hotel control upgrade', intro: 'Integrated room lighting, temperature and scene controls with central management to shorten response time.' },
-        { title: 'Campus network & security integration', intro: 'Unified surveillance, access, network and server systems to improve stability and management efficiency.' },
-        { title: 'Official brand website platform', intro: 'Improved identity consistency and inquiry conversion through upgraded visual system and information architecture.' },
-      ],
-    },
-    process: {
-      title: 'Delivery Workflow',
-      steps: [
-        { title: 'Discovery', desc: 'Clarify business goals, current systems and project boundaries.' },
-        { title: 'Solution Design', desc: 'Define IA, technical architecture, visual system and milestones.' },
-        { title: 'Agile Delivery', desc: 'Iterative development and integration with staged acceptance.' },
-        { title: 'Operations Optimization', desc: 'Post-launch monitoring, alerting and continuous improvements.' },
-      ],
-    },
-    faq: {
-      title: 'Frequently Asked Questions',
-      items: [
-        { q: 'Do you support bilingual websites?', a: 'Yes. This website includes bilingual structure and language switching.' },
-        { q: 'Can you deliver engineering and software together?', a: 'Yes. Kexing delivers low-voltage engineering, software and AI as one solution.' },
-        { q: 'How long does a project usually take?', a: 'Typically 2-8 weeks depending on scope, integration complexity and acceptance standards.' },
-      ],
-    },
-    profile: {
-      title: 'Company Information',
-      fieldsLeft: [
-        { label: 'Company Name', value: 'Kexing Technology (Shenzhen) Co., Ltd.' },
-        { label: 'Unified Social Credit Code', value: '91440300MA5H0HLK5U' },
-        { label: 'Established', value: '2021-09-22' },
-        { label: 'Legal Representative', value: 'Ge Yapeng' },
-        { label: 'Registered Capital', value: 'RMB 5,000,000' },
-      ],
-      fieldsRight: [
-        { label: 'Status', value: 'Active' },
-        { label: 'Industry', value: 'Information Transmission, Software and IT Services' },
-        { label: 'Registered Address', value: '18F-05, Building E, Baoneng Center, Baoan North Rd 3008, Luohu District, Shenzhen' },
-      ],
-      tags: [
-        'Computer System Services',
-        'System Integration',
-        'AI Application Development',
-        'Intelligent Control Integration',
-        'Cybersecurity Software',
-        'IoT Technical Services',
-        'Cloud Technical Services',
-        'Data Processing & Storage',
-        'Digital Creative Software',
-        'Construction (Licensed)',
-      ],
-    },
-    contact: {
-      title: 'Let’s Build Together',
-      desc: 'Planning low-voltage intelligence, hotel control, an official website or AI applications? Contact us and we will respond within 24 hours.',
-      domainLabel: 'Website',
-      business: 'Business Focus: Engineering / Software / AI',
-      backTop: 'Back to top',
-    },
-    footer: {
-      company: 'Kexing Technology (Shenzhen) Co., Ltd.',
-      code: 'Unified Social Credit Code: 91440300MA5H0HLK5U',
-      skip: 'Skip to main content',
-    },
+    htmlLang: 'en', locale: 'en-US', brand: 'Kexing Global Operations Center / Live Command', title: 'WORLD OPERATIONS CENTER',
+    subtitle: 'Adaptive fullscreen edition: one-click fullscreen, Chinese/English switching, single-screen desktop canvas, and automatic mobile reflow.',
+    api: 'API', latency: 'RTT', fps: 'FPS', full: 'Enter Fullscreen', exitFull: 'Exit Fullscreen', language: '中文',
+    loadingTitle: 'Kexing World Operations', loadingSub: 'Connecting global routes, real probes, and the live command canvas', loadingStepA: 'Brand identity check', loadingStepB: 'Real Earth model warm-up', loadingStepC: 'Ops probe synchronization', loadingStepD: 'Command canvas ready',
+    command: 'Operations Command Summary', ops: 'Operational Readiness', opsSub: 'Composite readiness score', posture: 'Active-active routing · Canary guard · WAF verified · Self-healing enabled', shift: 'Current Shift', shiftWindow: 'Handover window 08:00-20:00',
+    regionTitle: 'Regional Service Matrix', regionSub: 'Regional load / SLA / risk', region: 'Region', traffic: 'Traffic', rtt: 'RTT', risk: 'Risk',
+    capacity: 'Capacity Allocation', capacitySub: 'Compute / Network / Storage', compute: 'Compute', network: 'Network', storage: 'Storage',
+    topology: 'Global Live Traffic Topology', topologySub: 'Real Earth model · Three orbital layers · Flight links · Switchable ops focus', lastSync: 'Last sync',
+    feed: 'Ops Event Feed', feedSub: 'Real probe data / 10s refresh', healthProbe: 'Real API Health Probe', docsProbe: 'Real API Catalog Mirror', clientProbe: 'Browser Connectivity Telemetry',
+    waitingProbe: 'Waiting for real probe', waitingMessage: 'Waiting for the first API health probe, API catalog mirror, and browser telemetry response.',
+    healthStackApi: 'API Health', docsIndex: 'Catalog Index', networkOnline: 'Network Online', clientDownlink: 'Client Downlink', stable: 'Stable', degraded: 'Degraded', online: 'Online', offline: 'Offline',
+    queue: 'Response Queue', queueSub: 'Severity and handling progress', confirmed: 'Confirmed', processing: 'Processing', review: 'Review', normal: 'Normal',
+    services: 'Service Modules', footerSource: 'Sources: v.api.allapple.top health probe + API docs mirror + browser telemetry', entry: 'Entry: https://dps.allapple.top',
+    methods: ' methods', endpoints: ' endpoints', activeTasks: ' active tasks', indexed: ' indexed APIs', securityZero: '0 critical risks', degradedMode: 'Degraded protection mode',
+    kpiSessions: 'Active Sessions', kpiSessionsSub: 'Live users and session affinity', kpiThroughput: 'Global Throughput', kpiThroughputSub: 'Ingress bandwidth and cross-region forwarding', kpiNodes: 'Edge Nodes Online', kpiNodesSub: 'Global nodes and catalog index', kpiSecurity: 'Security Pass Rate', kpiSecuritySub: 'WAF / TLS / Bot composite hits',
+    primary: 'Primary Route', failover: 'Failover Route', security: 'Security Envelope', primaryPath: 'Beijing → Singapore → Frankfurt', primaryMeta: 'Avg 38.2ms · low latency first', failoverPath: 'Virginia → São Paulo → Sydney', failoverMeta: 'Hot standby · auto switchover', securityPath: 'WAF / Bot / TLS protection posture', securityMeta: 'risk converging',
+    info: 'INFO', warn: 'WATCH', crit: 'CRIT', probeOk: 'Returned', probeRtt: 'end-to-end RTT', probeFrom: 'from v.api.allapple.top real-time health check.', docsMessageA: 'API catalog mirror parsed', docsMessageB: ' method markers for API availability validation.', clientMessageA: 'Client connectivity is', clientMessageB: 'browser estimated downlink',
   },
+} as const;
+
+const regionNames = { zh: ['东亚', '欧洲', '北美', '南美', '非洲', '大洋洲'], en: ['East Asia', 'Europe', 'North America', 'South America', 'Africa', 'Oceania'] } as const;
+const riskNames = { zh: { low: '低', medium: '中', high: '高' }, en: { low: 'Low', medium: 'Medium', high: 'High' } } as const;
+const nodeLabels = {
+  zh: [
+    { className: 'node-dot beijing', label: '北京', type: '核心' }, { className: 'node-dot singapore', label: '新加坡', type: '边缘' }, { className: 'node-dot frankfurt', label: '法兰克福', type: '中继' }, { className: 'node-dot virginia', label: '弗吉尼亚', type: '云区' }, { className: 'node-dot sao-paulo', label: '圣保罗', type: '边缘' }, { className: 'node-dot sydney', label: '悉尼', type: '边缘' },
+  ],
+  en: [
+    { className: 'node-dot beijing', label: 'Beijing', type: 'Core' }, { className: 'node-dot singapore', label: 'Singapore', type: 'Edge' }, { className: 'node-dot frankfurt', label: 'Frankfurt', type: 'Relay' }, { className: 'node-dot virginia', label: 'Virginia', type: 'Cloud' }, { className: 'node-dot sao-paulo', label: 'São Paulo', type: 'Edge' }, { className: 'node-dot sydney', label: 'Sydney', type: 'Edge' },
+  ],
+} as const;
+
+const fallbackLive: LiveData = {
+  backendOk: false,
+  backendStatus: '初始化中',
+  apiRttMs: 0,
+  apiDocEndpoints: 0,
+  online: true,
+  downlinkMbps: 0,
+  fps: 60,
+  updatedAt: '--',
 };
 
-function LanguageSwitcher({ locale, onToggle }: { locale: Locale; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="liquid-chip inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-100 hover:text-white"
-      aria-label={locale === 'zh' ? '切换到英文' : 'Switch to Chinese'}
-    >
-      <Languages className="h-3.5 w-3.5" />
-      {locale === 'zh' ? '中文 / EN' : 'EN / 中文'}
-    </button>
-  );
+
+const serviceLanes = [
+  { zh: '客户会话网关', en: 'Customer Session Gateway', zhDesc: '统一接入 / 会话保持 / 灰度调度', enDesc: 'Unified ingress / session affinity / canary routing', owner: 'SRE-01', zhState: '运行中', enState: 'Running', sla: '99.996%', queue: 18 },
+  { zh: '智能路由平面', en: 'AI Routing Fabric', zhDesc: '跨区选路 / 容灾切换 / 流量整形', enDesc: 'Cross-region routing / failover / shaping', owner: 'NET-02', zhState: '运行中', enState: 'Running', sla: '99.992%', queue: 7 },
+  { zh: '安全控制平面', en: 'Security Control Plane', zhDesc: 'WAF 防护 / 证书巡检 / 风险闭环', enDesc: 'WAF defense / certificate patrol / risk closure', owner: 'SEC-04', zhState: '防护中', enState: 'Protected', sla: '99.989%', queue: 3 },
+  { zh: '接口文档镜像', en: 'API Documentation Mirror', zhDesc: '索引同步 / 可用性探测 / 版本校验', enDesc: 'Index sync / availability probe / version check', owner: 'DEV-03', zhState: '已索引', enState: 'Indexed', sla: '99.981%', queue: 11 },
+];
+
+function formatNow(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-function Navbar({ locale, onToggle }: { locale: Locale; onToggle: () => void }) {
-  const t = copy[locale];
-  const [open, setOpen] = useState(false);
-  const [activeHash, setActiveHash] = useState('#home');
-  const [scrollProgress, setScrollProgress] = useState(0);
+async function measureBackend(): Promise<{ ok: boolean; status: string; rtt: number; endpoints: number }> {
+  const healthEndpoint = '/backend/health';
+  const docsEndpoint = '/backend-docs/';
 
-  const navLinks: NavLink[] = useMemo(
-    () => [
-      { name: t.nav.home, href: '#home' },
-      { name: t.nav.lab3d, href: '#lab3d' },
-      { name: t.nav.services, href: '#services' },
-      { name: t.nav.cases, href: '#cases' },
-      { name: t.nav.profile, href: '#profile' },
-      { name: t.nav.contact, href: '#contact' },
-    ],
-    [t.nav],
-  );
+  const start = performance.now();
+  let ok = false;
+  let status = '探测中';
+  let endpoints = 0;
 
-  useEffect(() => {
-    const sections = navLinks
-      .map((item) => document.querySelector(item.href) as HTMLElement | null)
-      .filter(Boolean) as HTMLElement[];
+  try {
+    const healthRes = await fetch(healthEndpoint, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    const healthText = await healthRes.text();
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveHash(`#${entry.target.id}`);
-        });
-      },
-      { rootMargin: '-40% 0px -50% 0px', threshold: 0.12 },
-    );
+    if (!healthRes.ok) {
+      ok = false;
+      status = `HTTP ${healthRes.status}`;
+    } else {
+      try {
+        const parsed = JSON.parse(healthText) as { status?: string };
+        ok = parsed.status === 'ok';
+        status = parsed.status === 'ok' ? '正常' : parsed.status ? parsed.status : '未知';
+      } catch {
+        ok = false;
+        status = '解析异常';
+      }
+    }
 
-    sections.forEach((el) => observer.observe(el));
+    const docsRes = await fetch(docsEndpoint, { cache: 'no-store' });
+    const docsText = await docsRes.text();
+    const methodHits = docsText.match(/\b(GET|POST|PUT|DELETE|PATCH|WS|ALL)\b/g);
+    endpoints = methodHits ? methodHits.length : 0;
+  } catch {
+    ok = false;
+    status = '不可达';
+  }
 
-    const handleScroll = () => {
-      const top = window.scrollY;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setScrollProgress(max > 0 ? Math.min(1, top / max) : 0);
-    };
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [navLinks]);
-
-  return (
-    <header className="fixed inset-x-0 top-0 z-50">
-      <div className="h-0.5 w-full bg-white/5">
-        <motion.div className="h-full bg-[linear-gradient(90deg,#67e8f9,#7dd3fc,#93c5fd)]" style={{ transformOrigin: 'left', scaleX: scrollProgress }} />
-      </div>
-
-      <div className="mx-auto mt-3 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="liquid-panel flex h-16 items-center justify-between rounded-2xl px-3 md:h-[72px] md:px-4">
-          <a href="#home" className="flex items-center gap-3" aria-label="Kexing Home">
-            <img src="/logo.png" alt="柯兴科技" className="h-9 w-auto md:h-10" />
-          </a>
-
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
-            {navLinks.map((link) => {
-              const active = activeHash === link.href;
-              return (
-                <a key={link.href} href={link.href} aria-current={active ? 'page' : undefined} className={`liquid-nav-item px-4 py-2 text-sm transition ${active ? 'is-active' : ''}`}>
-                  {link.name}
-                </a>
-              );
-            })}
-          </nav>
-
-          <div className="hidden items-center gap-2 md:flex">
-            <LanguageSwitcher locale={locale} onToggle={onToggle} />
-            <a href="#lab3d" className="liquid-chip inline-flex items-center rounded-full px-3.5 py-2 text-xs font-semibold text-sky-100">
-              {t.nav.labTag}
-            </a>
-            <a href="#contact" className="liquid-btn inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold text-[#041223]">
-              {t.nav.cta}
-            </a>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="rounded-lg p-2 text-slate-100 hover:bg-white/10 md:hidden"
-            aria-label="toggle menu"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-          >
-            {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div id="mobile-nav" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mx-auto mt-2 max-w-7xl px-4 sm:px-6 md:hidden">
-            <div className="liquid-panel space-y-1 rounded-2xl p-3">
-              {navLinks.map((link) => (
-                <a key={link.href} href={link.href} onClick={() => setOpen(false)} className="block rounded-xl px-4 py-3 text-slate-100 hover:bg-white/8">
-                  {link.name}
-                </a>
-              ))}
-              <div className="mt-2 px-2"><LanguageSwitcher locale={locale} onToggle={onToggle} /></div>
-              <a href="#contact" onClick={() => setOpen(false)} className="liquid-btn mt-2 block rounded-xl px-4 py-3 text-center text-sm font-semibold text-[#041223]">
-                {t.nav.cta}
-              </a>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
-  );
+  const rtt = Math.round(performance.now() - start);
+  return { ok, status, rtt, endpoints };
 }
 
-function Hero({ locale }: { locale: Locale }) {
-  const t = copy[locale].hero;
-  return (
-    <section id="home" className="relative overflow-hidden pt-34 md:pt-36">
-      <div className="liquid-orb liquid-orb--a" />
-      <div className="liquid-orb liquid-orb--b" />
-      <div className="liquid-orb liquid-orb--c" />
-      <img src="/hero-liquid.svg" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45 mix-blend-screen" />
-
-      <div className="relative z-10 mx-auto grid max-w-7xl gap-9 px-4 pb-18 sm:px-6 lg:grid-cols-12 lg:px-8 lg:pb-24">
-        <div className="lg:col-span-7">
-          <motion.span initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="liquid-chip inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold tracking-widest text-cyan-100">
-            <Sparkles className="h-3.5 w-3.5" /> {t.badge}
-          </motion.span>
-
-          <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mt-6 text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">
-            {t.title1}
-            <span className="mt-2 block bg-gradient-to-r from-cyan-100 via-sky-100 to-blue-200 bg-clip-text text-transparent">{t.title2}</span>
-          </motion.h1>
-
-          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="mt-6 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
-            {t.desc}
-          </motion.p>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#services" className="liquid-btn inline-flex items-center rounded-xl px-6 py-3 text-sm font-semibold text-[#041223]">
-              {t.ctaPrimary} <ArrowRight className="ml-2 h-4 w-4" />
-            </a>
-            <a href="#cases" className="liquid-chip inline-flex items-center rounded-xl px-6 py-3 text-sm font-semibold text-cyan-50">
-              {t.ctaSecondary}
-            </a>
-          </div>
-
-          <div className="mt-9 grid gap-3 sm:grid-cols-3">
-            {t.stats.map((item) => (
-              <div key={item.label} className="liquid-panel rounded-2xl p-4">
-                <p className="text-xs text-slate-400">{item.label}</p>
-                <p className="mt-1 text-lg font-bold text-white">{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="lg:col-span-5">
-          <div className="hero-brand-card liquid-panel rounded-[28px] p-4">
-            <img src="/brand-poster.png" alt="柯兴科技品牌展示" loading="eager" fetchPriority="high" decoding="async" className="h-full w-full rounded-2xl object-cover" />
-          </div>
-          <p className="mt-4 text-sm leading-7 text-slate-300">{t.sideDesc}</p>
-        </div>
-      </div>
-    </section>
-  );
+function riskClass(risk: RegionRow['risk']) {
+  return risk;
 }
 
-function HtmlIn3DLab({ locale }: { locale: Locale }) {
-  const t = copy[locale].lab3d;
+function levelLabel(level: EventRow['level'], lang: Lang) {
+  if (level === 'CRIT') return copy[lang].crit;
+  if (level === 'WARN') return copy[lang].warn;
+  return copy[lang].info;
+}
+
+function statusLabel(status: string, lang: Lang) {
+  if (lang === 'zh') return status;
+  if (status === '正常') return 'OK';
+  if (status === '不可达') return 'Unreachable';
+  if (status === '解析异常') return 'Parse error';
+  if (status === '初始化中') return 'Initializing';
+  if (status === '探测中') return 'Probing';
+  return status;
+}
+
+type RouteMode = 'primary' | 'failover' | 'security';
+
+function RealEarthGlobe({ focusMode }: { focusMode: RouteMode }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const overlayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const overlay = overlayRef.current;
-    if (!canvas || !overlay) return;
+    const parent = canvas?.parentElement;
+    if (!canvas || !parent) return undefined;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 100);
-    camera.position.set(0, 0.2, 4.6);
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+    camera.position.set(0, 0.18, 5.7);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.92);
-    const key = new THREE.DirectionalLight(0xa5f3fc, 1.2);
-    key.position.set(2.6, 2.2, 3.2);
-    const rim = new THREE.PointLight(0x60a5fa, 0.9, 12);
-    rim.position.set(-2, -1, 2.5);
-    scene.add(ambient, key, rim);
+    const globeGroup = new THREE.Group();
+    globeGroup.rotation.set(-0.18, -0.42, 0.05);
+    scene.add(globeGroup);
 
-    const logoGroup = new THREE.Group();
-    scene.add(logoGroup);
-
-    const logoTexture = new THREE.TextureLoader().load('/favicon.png');
-    logoTexture.colorSpace = THREE.SRGBColorSpace;
-
-    const logoCoreMaterial = new THREE.MeshStandardMaterial({
-      map: logoTexture,
-      transparent: true,
-      alphaTest: 0.1,
-      emissive: new THREE.Color(0x67e8f9),
-      emissiveIntensity: 0.18,
-      metalness: 0.16,
-      roughness: 0.3,
-      side: THREE.DoubleSide,
+    const textureLoader = new THREE.TextureLoader();
+    const earthMap = textureLoader.load('/earth/earth_atmos_2048.jpg');
+    const normalMap = textureLoader.load('/earth/earth_normal_2048.jpg');
+    const specularMap = textureLoader.load('/earth/earth_specular_2048.jpg');
+    const cloudMap = textureLoader.load('/earth/earth_clouds_1024.png');
+    [earthMap, normalMap, specularMap, cloudMap].forEach((texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
     });
+    normalMap.colorSpace = THREE.NoColorSpace;
+    specularMap.colorSpace = THREE.NoColorSpace;
 
-    const logoCore = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 1.55), logoCoreMaterial);
-    logoCore.position.set(0, 0, 0.25);
-    logoGroup.add(logoCore);
+    const earthGeometry = new THREE.SphereGeometry(1.64, 96, 96);
+    const earthMaterial = new THREE.MeshPhongMaterial({
+      map: earthMap,
+      normalMap,
+      normalScale: new THREE.Vector2(0.18, 0.18),
+      specularMap,
+      specular: new THREE.Color('#5bb6ff'),
+      shininess: 18,
+    });
+    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    globeGroup.add(earth);
 
-    const logoBack = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.95, 1.95),
-      new THREE.MeshBasicMaterial({
-        map: logoTexture,
-        transparent: true,
-        opacity: 0.2,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
-    );
-    logoBack.position.set(0, 0, -0.12);
-    logoGroup.add(logoBack);
+    const cloudGeometry = new THREE.SphereGeometry(1.675, 96, 96);
+    const cloudMaterial = new THREE.MeshLambertMaterial({ map: cloudMap, transparent: true, opacity: 0.34, depthWrite: false });
+    const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+    globeGroup.add(clouds);
 
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(1.55, 0.05, 24, 180),
-      new THREE.MeshStandardMaterial({ color: 0x7dd3fc, emissive: 0x1d4ed8, metalness: 0.35, roughness: 0.25 }),
-    );
-    ring.rotation.x = Math.PI * 0.5;
-    logoGroup.add(ring);
+    const atmosphereGeometry = new THREE.SphereGeometry(1.72, 96, 96);
+    const atmosphereMaterial = new THREE.MeshBasicMaterial({ color: '#38bdf8', transparent: true, opacity: 0.13, side: THREE.BackSide, blending: THREE.AdditiveBlending });
+    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+    globeGroup.add(atmosphere);
 
-    const satellites: THREE.Sprite[] = [];
-    const satelliteMaterial = new THREE.SpriteMaterial({ map: logoTexture, color: 0xe0f2fe, transparent: true, opacity: 0.85 });
-    for (let i = 0; i < 16; i += 1) {
-      const sprite = new THREE.Sprite(satelliteMaterial.clone());
-      const radius = 1.9 + (i % 4) * 0.25;
-      const angle = (i / 16) * Math.PI * 2;
-      sprite.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.62, (i % 3) * 0.2 - 0.3);
-      const s = 0.2 + (i % 5) * 0.03;
-      sprite.scale.set(s, s, 1);
-      satellites.push(sprite);
-      scene.add(sprite);
+    const starGeometry = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(240 * 3);
+    for (let i = 0; i < 240; i += 1) {
+      const radius = 5.5 + Math.random() * 6;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      starPositions[i * 3 + 2] = radius * Math.cos(phi);
     }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({ color: '#bae6fd', size: 0.015, transparent: true, opacity: 0.52 });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
 
-    const anchors = [
-      { pos: new THREE.Vector3(-1.95, 1.2, 0.35), el: null as HTMLElement | null },
-      { pos: new THREE.Vector3(1.95, 1.0, 0.3), el: null as HTMLElement | null },
-      { pos: new THREE.Vector3(-1.65, -1.35, 0.45), el: null as HTMLElement | null },
-      { pos: new THREE.Vector3(1.7, -1.2, -0.05), el: null as HTMLElement | null },
+    const markerGroup = new THREE.Group();
+    const markerMaterial = new THREE.MeshBasicMaterial({ color: '#67e8f9', transparent: true, opacity: 0.82 });
+    const markerGeometry = new THREE.SphereGeometry(0.018, 16, 16);
+    const markerPositions = [
+      new THREE.Vector3(0.92, 0.56, 1.24),
+      new THREE.Vector3(1.34, -0.18, 0.92),
+      new THREE.Vector3(0.14, 0.74, 1.45),
+      new THREE.Vector3(-1.05, 0.32, 1.15),
+      new THREE.Vector3(-0.66, -0.88, 1.12),
+      new THREE.Vector3(1.02, -0.94, 0.88),
     ];
-
-    anchors.forEach((item, index) => {
-      item.el = overlay.querySelector(`[data-anchor="${index}"]`) as HTMLElement | null;
+    markerPositions.forEach((position) => {
+      const marker = new THREE.Mesh(markerGeometry, markerMaterial.clone());
+      marker.position.copy(position);
+      markerGroup.add(marker);
     });
+    globeGroup.add(markerGroup);
 
-    const pointer = new THREE.Vector2(0, 0);
-    const handlePointerMove = (event: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    };
+    scene.add(new THREE.AmbientLight('#6aa6c8', 0.9));
+    const sunLight = new THREE.DirectionalLight('#ffffff', 2.4);
+    sunLight.position.set(4.2, 2.1, 4.8);
+    scene.add(sunLight);
+    const rimLight = new THREE.DirectionalLight('#38bdf8', 1.2);
+    rimLight.position.set(-3.8, 1.2, -2.4);
+    scene.add(rimLight);
 
     const resize = () => {
-      const { clientWidth, clientHeight } = canvas;
-      renderer.setSize(clientWidth, clientHeight, false);
-      camera.aspect = clientWidth / Math.max(clientHeight, 1);
+      const rect = parent.getBoundingClientRect();
+      const size = Math.max(280, Math.min(rect.width, rect.height || rect.width));
+      renderer.setSize(size, size, false);
+      camera.aspect = 1;
       camera.updateProjectionMatrix();
     };
     resize();
-
-    let raf = 0;
-    const clock = new THREE.Clock();
-    const run = () => {
-      const elapsed = clock.getElapsedTime();
-
-      logoGroup.rotation.y = elapsed * 0.42;
-      logoGroup.rotation.x = Math.sin(elapsed * 0.6) * 0.15;
-      logoGroup.position.y = Math.sin(elapsed * 0.95) * 0.12;
-      ring.rotation.z = elapsed * 0.56;
-      logoBack.rotation.z = -elapsed * 0.2;
-
-      camera.position.x = THREE.MathUtils.lerp(camera.position.x, pointer.x * 0.36, 0.06);
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0.2 + pointer.y * 0.2, 0.06);
-      camera.lookAt(0, 0, 0);
-
-      satellites.forEach((item, index) => {
-        const speed = 0.14 + (index % 5) * 0.028;
-        const radius = 1.85 + (index % 4) * 0.24;
-        const angle = elapsed * speed + (index / satellites.length) * Math.PI * 2;
-        item.position.x = Math.cos(angle) * radius;
-        item.position.y = Math.sin(angle) * (radius * 0.62);
-        item.position.z = Math.sin(elapsed * 0.8 + index) * 0.35;
-      });
-
-      anchors.forEach((item) => {
-        if (!item.el) return;
-        const projected = item.pos.clone().project(camera);
-        const x = (projected.x * 0.5 + 0.5) * canvas.clientWidth;
-        const y = (-projected.y * 0.5 + 0.5) * canvas.clientHeight;
-        const depth = Math.max(0, Math.min(1, 1 - projected.z * 0.4));
-        item.el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${0.84 + depth * 0.24})`;
-        item.el.style.opacity = projected.z > 1.05 ? '0' : '1';
-      });
-
-      renderer.render(scene, camera);
-      raf = window.requestAnimationFrame(run);
-    };
-
-    raf = window.requestAnimationFrame(run);
     window.addEventListener('resize', resize);
-    canvas.addEventListener('pointermove', handlePointerMove);
+
+    let rafId = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+    const onPointerMove = (event: PointerEvent) => {
+      const rect = parent.getBoundingClientRect();
+      pointerX = ((event.clientX - rect.left) / rect.width - 0.5) * 0.16;
+      pointerY = ((event.clientY - rect.top) / rect.height - 0.5) * 0.12;
+    };
+    const onPointerLeave = () => {
+      pointerX = 0;
+      pointerY = 0;
+    };
+    parent.addEventListener('pointermove', onPointerMove);
+    parent.addEventListener('pointerleave', onPointerLeave);
+
+    const clock = new THREE.Clock();
+    const modeSpeed = focusMode === 'primary' ? 1 : focusMode === 'failover' ? 1.22 : 0.82;
+    const modeTilt = focusMode === 'primary' ? -0.42 : focusMode === 'failover' ? -0.16 : -0.66;
+    const animate = () => {
+      rafId = requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      earth.rotation.y += 0.0019 * modeSpeed;
+      clouds.rotation.y += 0.0028 * modeSpeed;
+      clouds.rotation.x = Math.sin(elapsed * 0.7) * 0.018;
+      globeGroup.rotation.y += (modeTilt + pointerX - globeGroup.rotation.y) * 0.026;
+      globeGroup.rotation.x += (-0.18 - pointerY - globeGroup.rotation.x) * 0.022;
+      markerGroup.children.forEach((child, index) => {
+        const material = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
+        const pulse = 0.72 + Math.sin(elapsed * 2.4 + index * 0.8) * 0.28;
+        child.scale.setScalar(1 + pulse * 1.6);
+        material.opacity = 0.42 + pulse * 0.42;
+      });
+      stars.rotation.y += 0.00045;
+      renderer.render(scene, camera);
+    };
+    animate();
 
     return () => {
-      window.cancelAnimationFrame(raf);
+      cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
-      canvas.removeEventListener('pointermove', handlePointerMove);
-      logoCore.geometry.dispose();
-      logoBack.geometry.dispose();
-      ring.geometry.dispose();
-      logoCoreMaterial.dispose();
-      (logoBack.material as THREE.Material).dispose();
-      (ring.material as THREE.Material).dispose();
-      satellites.forEach((item) => item.material.dispose());
+      parent.removeEventListener('pointermove', onPointerMove);
+      parent.removeEventListener('pointerleave', onPointerLeave);
+      [earthMap, normalMap, specularMap, cloudMap].forEach((texture) => texture.dispose());
+      earthGeometry.dispose();
+      earthMaterial.dispose();
+      cloudGeometry.dispose();
+      cloudMaterial.dispose();
+      atmosphereGeometry.dispose();
+      atmosphereMaterial.dispose();
+      markerGroup.children.forEach((child) => {
+        const material = (child as THREE.Mesh).material as THREE.Material;
+        material.dispose();
+      });
+      markerGeometry.dispose();
+      starGeometry.dispose();
+      starMaterial.dispose();
       renderer.dispose();
     };
-  }, [locale]);
+  }, [focusMode]);
 
-  return (
-    <section id="lab3d" className="py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
-            <p className="mt-3 max-w-3xl text-slate-300">{t.desc}</p>
-          </div>
-          <span className="liquid-chip hidden rounded-full px-3 py-1 text-xs text-cyan-100 md:inline-block">{t.badge}</span>
-        </div>
-
-        <div className="liquid-panel rounded-3xl p-3 md:p-4">
-          <div className="relative h-[470px] overflow-hidden rounded-2xl border border-cyan-200/20 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.28),rgba(4,10,28,0.96)_58%)]">
-            <canvas ref={canvasRef} className="h-full w-full" aria-label="logo 3d interactive canvas" />
-            <div ref={overlayRef} className="pointer-events-none absolute inset-0">
-              {t.cards.map((card, index) => (
-                <article key={card.title} data-anchor={index} className="liquid-panel pointer-events-auto absolute left-0 top-0 w-52 -translate-x-1/2 -translate-y-1/2 rounded-2xl p-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
-                  <h3 className="text-sm font-semibold text-cyan-300">{card.title}</h3>
-                  <p className="mt-1 text-xs leading-5 text-slate-300">{card.desc}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  return <canvas ref={canvasRef} className="real-earth-canvas" aria-label="真实地球三维模型，包含交互式运维链路标记" />;
 }
 
-function Services({ locale }: { locale: Locale }) {
-  const t = copy[locale].services;
-  const icons = [Cable, Hotel, Globe, Bot, Cloud, ShieldCheck];
+function BrandIntro({ t, lang }: { t: (typeof copy)[Lang]; lang: Lang }) {
+  const steps = [t.loadingStepA, t.loadingStepB, t.loadingStepC, t.loadingStepD];
 
   return (
-    <section id="services" className="py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
-            <p className="mt-4 max-w-3xl text-slate-300">{t.desc}</p>
-          </div>
-          <a href="#contact" className="inline-flex items-center text-sm text-cyan-200 hover:text-cyan-100">
-            {t.cta} <ChevronRight className="h-4 w-4" />
-          </a>
+    <div className="brand-intro" role="status" aria-live="polite" aria-label={t.loadingTitle}>
+      <div className="intro-grid" aria-hidden="true" />
+      <div className="intro-orbit orbit-one" aria-hidden="true" />
+      <div className="intro-orbit orbit-two" aria-hidden="true" />
+      <div className="intro-card">
+        <div className="intro-avatar-wrap">
+          <span className="intro-ring" />
+          <img src="/logo.png" alt="柯兴科技徽标" className="intro-avatar" />
+          <span className="intro-scan" />
         </div>
-
-        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {t.items.map((item, index) => {
-            const Icon = icons[index];
-            return (
-              <motion.article
-                key={item.title}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.04 }}
-                viewport={{ once: true, amount: 0.2 }}
-                className="liquid-panel group rounded-3xl p-6 transition hover:-translate-y-1"
-              >
-                <div className="liquid-chip inline-flex rounded-2xl p-3 text-cyan-300"><Icon className="h-6 w-6" /></div>
-                <h3 className="mt-4 text-xl font-bold text-white">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-300">{item.desc}</p>
-              </motion.article>
-            );
-          })}
+        <div className="intro-copy">
+          <span>{lang === 'zh' ? '首次加载 / 安全接入' : 'Initial Load / Secure Access'}</span>
+          <strong>{t.loadingTitle}</strong>
+          <p>{t.loadingSub}</p>
+        </div>
+        <div className="intro-progress"><i /></div>
+        <div className="intro-steps">
+          {steps.map((step, index) => <em key={step} style={{ animationDelay: `${0.35 + index * 0.42}s` }}>{step}</em>)}
         </div>
       </div>
-    </section>
-  );
-}
-
-function Cases({ locale }: { locale: Locale }) {
-  const t = copy[locale].cases;
-  const icons = [MonitorSmartphone, Network, Building2];
-
-  return (
-    <section id="cases" className="relative overflow-hidden border-y border-white/8 bg-black/15 py-20">
-      <img src="/case-mesh.svg" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {t.items.map((item, index) => {
-            const Icon = icons[index];
-            return (
-              <div key={item.title} className="liquid-panel rounded-3xl p-6">
-                <div className="liquid-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs text-cyan-100">
-                  <Icon className="h-5 w-5" /> {locale === 'zh' ? '交付案例' : 'Case Delivery'}
-                </div>
-                <h3 className="mt-4 text-xl font-bold text-white">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-300">{item.intro}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProcessSection({ locale }: { locale: Locale }) {
-  const t = copy[locale].process;
-
-  return (
-    <section className="py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
-        <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {t.steps.map((step, index) => (
-            <motion.article
-              key={step.title}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.06 }}
-              viewport={{ once: true, amount: 0.2 }}
-              className="liquid-panel rounded-2xl p-5"
-            >
-              <span className="liquid-chip inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-xs font-bold text-cyan-100">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <h3 className="mt-4 text-lg font-semibold text-white">{step.title}</h3>
-              <p className="mt-2 text-sm leading-7 text-slate-300">{step.desc}</p>
-            </motion.article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FaqSection({ locale }: { locale: Locale }) {
-  const t = copy[locale].faq;
-
-  return (
-    <section className="pb-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
-        <div className="mt-8 space-y-4">
-          {t.items.map((item) => (
-            <details key={item.q} className="liquid-panel group rounded-2xl p-5" open>
-              <summary className="cursor-pointer list-none text-base font-semibold text-slate-100">{item.q}</summary>
-              <p className="mt-3 text-sm leading-7 text-slate-300">{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Profile({ locale }: { locale: Locale }) {
-  const t = copy[locale].profile;
-  return (
-    <section id="profile" className="py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t.title}</h2>
-        <div className="liquid-panel mt-8 grid gap-6 rounded-3xl p-6 md:grid-cols-2 md:p-8">
-          <div className="space-y-3 text-sm leading-7 text-slate-300">
-            {t.fieldsLeft.map((field) => (
-              <p key={field.label}><span className="text-slate-400">{field.label}：</span>{field.value}</p>
-            ))}
-          </div>
-          <div className="space-y-3 text-sm leading-7 text-slate-300">
-            {t.fieldsRight.map((field) => (
-              <p key={field.label}><span className="text-slate-400">{field.label}：</span>{field.value}</p>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          {t.tags.map((tag) => (
-            <span key={tag} className="liquid-chip rounded-full px-3 py-1 text-xs text-slate-100">{tag}</span>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Contact({ locale }: { locale: Locale }) {
-  const t = copy[locale].contact;
-  return (
-    <section id="contact" className="pb-20 pt-6">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="liquid-panel grid gap-6 rounded-3xl p-8 md:grid-cols-2 md:items-center md:p-10">
-          <div>
-            <h2 className="text-3xl font-black tracking-tight text-white">{t.title}</h2>
-            <p className="mt-3 text-slate-200">{t.desc}</p>
-          </div>
-          <div className="space-y-3 text-sm text-slate-100 md:pl-8">
-            <a href="https://kexing.allapple.top" className="flex items-center gap-2 hover:text-cyan-100">
-              <Globe className="h-4 w-4" /> {t.domainLabel}: kexing.allapple.top
-            </a>
-            <p className="flex items-center gap-2"><Cpu className="h-4 w-4" /> {t.business}</p>
-            <a href="#home" className="liquid-btn inline-flex items-center rounded-xl px-4 py-2 font-semibold text-[#041223]">
-              {t.backTop} <ChevronRight className="ml-1 h-4 w-4" />
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Footer({ locale }: { locale: Locale }) {
-  const t = copy[locale].footer;
-  return (
-    <footer className="border-t border-white/10 py-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-sm text-slate-400 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="柯兴科技" className="h-8 w-auto" />
-          <span>© {new Date().getFullYear()} {t.company}</span>
-        </div>
-        <span>{t.code}</span>
-      </div>
-    </footer>
+    </div>
   );
 }
 
 export default function App() {
-  const [locale, setLocale] = useState<Locale>('zh');
+  const [now, setNow] = useState(() => new Date());
+  const [live, setLive] = useState<LiveData>(fallbackLive);
+  const [eventLog, setEventLog] = useState<EventRow[]>([]);
+  const [routeMode, setRouteMode] = useState<RouteMode>('primary');
+  const [lang, setLang] = useState<Lang>(() => (window.localStorage.getItem('ops-lang') === 'en' ? 'en' : 'zh'));
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
+  const t = copy[lang];
+
+  const updateCursorGlow = (event: ReactPointerEvent<HTMLElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.style.setProperty('--cursor-x', `${event.clientX - rect.left}px`);
+    event.currentTarget.style.setProperty('--cursor-y', `${event.clientY - rect.top}px`);
+  };
+
+  const toggleLanguage = () => {
+    setLang((current) => {
+      const next = current === 'zh' ? 'en' : 'zh';
+      window.localStorage.setItem('ops-lang', next);
+      return next;
+    });
+  };
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  };
 
   useEffect(() => {
-    const stored = window.localStorage.getItem('kexing-locale');
-    if (stored === 'zh' || stored === 'en') {
-      setLocale(stored);
-      return;
-    }
-    const preferred = navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
-    setLocale(preferred);
+    document.documentElement.lang = t.htmlLang;
+    document.title = lang === 'zh' ? `${t.title} | 柯兴科技` : 'World Operations Center | Kexing Technology';
+  }, [lang, t.htmlLang, t.title]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowIntro(false), 3600);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
-    window.localStorage.setItem('kexing-locale', locale);
-  }, [locale]);
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
 
-  const t = copy[locale];
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let frame = 0;
+    let rafId = 0;
+    let prev = performance.now();
+
+    const updateFps = (t: number) => {
+      frame += 1;
+      const diff = t - prev;
+      if (diff >= 1000) {
+        const fps = Math.round((frame * 1000) / diff);
+        setLive((curr) => ({ ...curr, fps }));
+        frame = 0;
+        prev = t;
+      }
+      rafId = requestAnimationFrame(updateFps);
+    };
+
+    rafId = requestAnimationFrame(updateFps);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+
+    const load = async () => {
+      const data = await measureBackend();
+      if (disposed) return;
+      const connection = (navigator as NavigatorWithConnection).connection;
+      const sampledAt = new Date();
+      const sampledAtText = formatNow(sampledAt);
+      const browserOnline = navigator.onLine;
+      const downlinkMbps = Number((connection?.downlink || 0).toFixed(1));
+
+      setLive((curr) => ({
+        ...curr,
+        backendOk: data.ok,
+        backendStatus: data.status,
+        apiRttMs: data.rtt,
+        apiDocEndpoints: data.endpoints,
+        online: browserOnline,
+        downlinkMbps,
+        updatedAt: sampledAtText,
+      }));
+
+      setEventLog((prev) => {
+        const probeSeq = sampledAt.getTime();
+        const probeEvents: EventRow[] = [
+          {
+            id: `${probeSeq}-health`,
+            time: sampledAtText,
+            level: data.ok ? 'INFO' : 'CRIT',
+            source: copy[lang].healthProbe,
+            endpoint: '/backend/health',
+            message: lang === 'zh' ? `${copy.zh.probeOk} ${data.status}，${copy.zh.probeRtt} ${data.rtt}ms，${copy.zh.probeFrom}` : `${copy.en.probeOk} ${data.status}, ${copy.en.probeRtt} ${data.rtt}ms, ${copy.en.probeFrom}`,
+          },
+          {
+            id: `${probeSeq}-docs`,
+            time: sampledAtText,
+            level: data.endpoints > 0 ? 'INFO' : 'WARN',
+            source: copy[lang].docsProbe,
+            endpoint: '/backend-docs/',
+            message: lang === 'zh' ? `${copy.zh.docsMessageA} ${data.endpoints} ${copy.zh.docsMessageB}` : `${copy.en.docsMessageA} ${data.endpoints}${copy.en.docsMessageB}`,
+          },
+          {
+            id: `${probeSeq}-client`,
+            time: sampledAtText,
+            level: browserOnline ? 'INFO' : 'CRIT',
+            source: copy[lang].clientProbe,
+            endpoint: 'navigator.onLine / NetworkInformation',
+            message: lang === 'zh' ? `${copy.zh.clientMessageA} ${browserOnline ? copy.zh.online : copy.zh.offline}，${copy.zh.clientMessageB} ${downlinkMbps || 0} Mbps。` : `${copy.en.clientMessageA} ${browserOnline ? copy.en.online : copy.en.offline}; ${copy.en.clientMessageB} ${downlinkMbps || 0} Mbps.`,
+          },
+        ];
+
+        return [...probeEvents, ...prev].slice(0, 7);
+      });
+    };
+
+    void load();
+    const timer = window.setInterval(() => void load(), 10000);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+    };
+  }, [lang]);
+
+  const rotationStyle = useMemo(
+    () => ({ transform: `rotate(${(now.getSeconds() / 60) * 360}deg)` }),
+    [now],
+  );
+
+  const rttSafe = live.apiRttMs || 88;
+  const totalSessions = 1248000 + live.apiDocEndpoints * 126 + live.fps * 90;
+  const edgeNodes = 2380 + Math.round((live.downlinkMbps || 0) * 8);
+  const throughput = Math.max(8.1, (live.downlinkMbps || 0) * 1.9).toFixed(1);
+  const securityScore = live.backendOk ? '99.96%' : '97.84%';
+  const opsScore = live.backendOk ? 96 : 72;
+
+  const kpis: KpiCard[] = [
+    { label: t.kpiSessions, sub: t.kpiSessionsSub, value: totalSessions.toLocaleString(t.locale), trend: lang === 'zh' ? '15 分钟 +12.8%' : '15 min +12.8%', accent: 'blue', spark: [36, 42, 39, 51, 56, 62, 58, 68] },
+    { label: t.kpiThroughput, sub: t.kpiThroughputSub, value: `${throughput} Gbps`, trend: lang === 'zh' ? 'P95 稳定' : 'P95 stable', accent: 'cyan', spark: [22, 31, 35, 44, 41, 49, 57, 61] },
+    { label: t.kpiNodes, sub: t.kpiNodesSub, value: edgeNodes.toLocaleString(t.locale), trend: `${live.apiDocEndpoints || 46}${t.indexed}`, accent: 'violet', spark: [52, 51, 54, 58, 57, 60, 63, 65] },
+    { label: t.kpiSecurity, sub: t.kpiSecuritySub, value: securityScore, trend: live.backendOk ? t.securityZero : t.degradedMode, accent: 'amber', spark: [64, 64, 63, 66, 65, 67, 66, 68] },
+  ];
+
+  const regions: RegionRow[] = [
+    { region: regionNames[lang][0], code: 'EAS', traffic: lang === 'zh' ? '380万/min' : '3.8M/min', latencyMs: Math.max(16, rttSafe - 36), availability: '99.997%', load: 82, risk: 'low', owner: 'CN-NOC' },
+    { region: regionNames[lang][1], code: 'EUR', traffic: lang === 'zh' ? '260万/min' : '2.6M/min', latencyMs: Math.max(22, rttSafe - 18), availability: '99.994%', load: 68, risk: rttSafe > 180 ? 'medium' : 'low', owner: 'EU-SRE' },
+    { region: regionNames[lang][2], code: 'NAM', traffic: lang === 'zh' ? '310万/min' : '3.1M/min', latencyMs: Math.max(20, rttSafe - 24), availability: '99.996%', load: 74, risk: 'low', owner: 'US-NET' },
+    { region: regionNames[lang][3], code: 'SAM', traffic: lang === 'zh' ? '120万/min' : '1.2M/min', latencyMs: Math.max(42, rttSafe + 8), availability: '99.982%', load: 57, risk: rttSafe > 210 ? 'high' : 'medium', owner: 'BR-OPS' },
+    { region: regionNames[lang][4], code: 'AFR', traffic: lang === 'zh' ? '90万/min' : '0.9M/min', latencyMs: Math.max(48, rttSafe + 12), availability: '99.978%', load: 49, risk: 'medium', owner: 'ZA-EDGE' },
+    { region: regionNames[lang][5], code: 'OCE', traffic: lang === 'zh' ? '80万/min' : '0.8M/min', latencyMs: Math.max(38, rttSafe + 4), availability: '99.988%', load: 53, risk: 'low', owner: 'AU-SRE' },
+  ];
+
+  const events: EventRow[] = eventLog.length > 0 ? eventLog : [
+    {
+      id: 'waiting-real-probe',
+      time: formatNow(now),
+      level: 'WARN',
+      source: t.waitingProbe,
+      endpoint: '/backend/health',
+      message: t.waitingMessage,
+    },
+  ];
+
+  const healthStack: HealthItem[] = [
+    { name: t.healthStackApi, value: live.backendOk ? t.stable : t.degraded, score: live.backendOk ? 96 : 62, state: live.backendOk ? 'stable' : 'risk' },
+    { name: t.docsIndex, value: `${live.apiDocEndpoints || 46}${t.endpoints}`, score: 88, state: 'stable' },
+    { name: t.networkOnline, value: live.online ? t.online : t.offline, score: live.online ? 94 : 25, state: live.online ? 'stable' : 'risk' },
+    { name: t.clientDownlink, value: `${live.downlinkMbps || 0} Mbps`, score: Math.min(96, Math.max(30, (live.downlinkMbps || 5) * 9)), state: (live.downlinkMbps || 5) > 8 ? 'stable' : 'watch' },
+  ];
+
+  const responseQueue = [
+    { priority: live.backendOk ? 'P3' : 'P1', text: `${t.healthProbe}: ${statusLabel(live.backendStatus, lang)}`, state: live.backendOk ? t.confirmed : t.processing },
+    { priority: live.apiDocEndpoints > 0 ? 'P3' : 'P2', text: `${t.docsProbe}: ${live.apiDocEndpoints || 0}${t.methods}`, state: live.apiDocEndpoints > 0 ? t.confirmed : t.review },
+    { priority: live.online ? 'P3' : 'P1', text: `${t.clientProbe}: ${live.online ? t.online : t.offline}`, state: live.online ? t.normal : t.processing },
+  ];
+
+  const routeProfiles = {
+    primary: { label: t.primary, cn: t.primary, path: t.primaryPath, meta: t.primaryMeta },
+    failover: { label: t.failover, cn: t.failover, path: t.failoverPath, meta: t.failoverMeta },
+    security: { label: t.security, cn: t.security, path: t.securityPath, meta: `${securityScore} · ${t.securityMeta}` },
+  } satisfies Record<RouteMode, { label: string; cn: string; path: string; meta: string }>;
 
   return (
-    <div className="min-h-screen text-white">
-      <a href="#main-content" className="sr-only z-[60] rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-slate-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
-        {t.footer.skip}
-      </a>
-      <Navbar locale={locale} onToggle={() => setLocale((v) => (v === 'zh' ? 'en' : 'zh'))} />
-      <main id="main-content">
-        <Hero locale={locale} />
-        <HtmlIn3DLab locale={locale} />
-        <Services locale={locale} />
-        <Cases locale={locale} />
-        <ProcessSection locale={locale} />
-        <Profile locale={locale} />
-        <FaqSection locale={locale} />
-        <Contact locale={locale} />
-      </main>
-      <Footer locale={locale} />
-    </div>
+    <main className={`ops-screen route-${routeMode} lang-${lang}`} onPointerMove={updateCursorGlow}>
+      {showIntro && <BrandIntro t={t} lang={lang} />}
+      <header className="ops-header">
+        <div className="brand-lockup">
+          <div className="brand-avatar" aria-hidden="true">
+            <img src="/logo.png" alt="" />
+            <span className="status-beacon" />
+          </div>
+          <div>
+            <span className="eyebrow">{t.brand}</span>
+            <h1>{t.title}</h1>
+            <p>{t.subtitle}</p>
+          </div>
+        </div>
+        <div className="header-actions">
+          <button type="button" onClick={toggleLanguage} aria-label={lang === 'zh' ? 'Switch to English' : '切换到中文'}>{t.language}</button>
+          <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? t.exitFull : t.full}>{isFullscreen ? t.exitFull : t.full}</button>
+        </div>
+        <div className="header-console" aria-label={lang === 'zh' ? '实时系统状态控制台' : 'Live system status console'}>
+          <span className={live.backendOk ? 'ok' : 'bad'}>{t.api} {statusLabel(live.backendStatus, lang)}</span>
+          <span>{t.latency} {live.apiRttMs || 0}ms</span>
+          <span>{t.fps} {live.fps}</span>
+          <span>{formatNow(now)} UTC+8</span>
+        </div>
+      </header>
+
+      <section className="command-strip" aria-label={t.command}>
+        <div className="mission-card">
+          <span>{t.ops}</span>
+          <strong>{opsScore}</strong>
+          <em>{t.opsSub}</em>
+        </div>
+        <div className="mission-radar">
+          <i style={{ width: `${opsScore}%` }} />
+          <span>{t.posture}</span>
+        </div>
+        <div className="shift-card">
+          <span>{t.shift}</span>
+          <strong>CN-NOC A</strong>
+          <em>{t.shiftWindow}</em>
+        </div>
+      </section>
+
+      <section className="kpi-grid" aria-label={lang === 'zh' ? '全球运营核心指标' : 'Global operations KPIs'}>
+        {kpis.map((card) => (
+          <article className={`kpi-card ${card.accent}`} key={card.label}>
+            <div>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.sub} · {card.trend}</small>
+            </div>
+            <div className="sparkline" aria-hidden="true">
+              {card.spark.map((height, index) => <i key={`${card.label}-${index}`} style={{ height: `${height}%` }} />)}
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="main-grid">
+        <aside className="panel left-stack">
+          <div className="panel-title">
+            <span>{t.regionTitle}</span>
+            <em>{t.regionSub}</em>
+          </div>
+          <div className="region-table">
+            <div className="thead">
+              <span>{t.region}</span><span>{t.traffic}</span><span>{t.rtt}</span><span>SLA</span><span>{t.risk}</span>
+            </div>
+            {regions.map((row) => (
+              <div key={row.code} className="trow">
+                <span className="region-cell"><i />{row.region}<b>{row.code}</b></span>
+                <span>{row.traffic}</span>
+                <span>{row.latencyMs} ms</span>
+                <span>{row.availability}</span>
+                <span className={`risk ${riskClass(row.risk)}`}>{riskNames[lang][row.risk]}</span>
+                <span className="owner-tag">{row.owner}</span>
+                <span className="load-line"><i style={{ width: `${row.load}%` }} /></span>
+              </div>
+            ))}
+          </div>
+          <div className="section-card compact">
+            <div className="section-head"><span>{t.capacity}</span><em>{t.capacitySub}</em></div>
+            <div className="capacity-list">
+              <p><b>{t.compute}</b><i style={{ width: '76%' }} /><span>76%</span></p>
+              <p><b>{t.network}</b><i style={{ width: '64%' }} /><span>64%</span></p>
+              <p><b>{t.storage}</b><i style={{ width: '58%' }} /><span>58%</span></p>
+            </div>
+          </div>
+        </aside>
+
+        <section className={`center-stage focus-${routeMode}`} aria-label={lang === 'zh' ? '中央实时地球链路拓扑' : 'Central live Earth link topology'}>
+          <div className="stage-topline">
+            <div><span>{t.topology}</span><strong>{t.topologySub}</strong></div>
+            <div className="route-switcher" aria-label={lang === 'zh' ? '链路焦点切换器' : 'Route focus switcher'}>
+              {(Object.keys(routeProfiles) as RouteMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  className={routeMode === mode ? 'active' : ''}
+                  type="button"
+                  onClick={() => setRouteMode(mode)}
+                >
+                  {routeProfiles[mode].cn}
+                </button>
+              ))}
+            </div>
+            <em>{t.lastSync} {live.updatedAt}</em>
+          </div>
+          <div className="globe-shell">
+            <div className="orbital-ring ring-a" style={rotationStyle} />
+            <div className="orbital-ring ring-b" />
+            <div className="orbital-ring ring-c" />
+            <svg className="flight-lines" viewBox="0 0 100 100" aria-hidden="true">
+              <path className={`route route-1 ${routeMode === 'primary' ? 'active' : ''}`} d="M17 48 Q38 20 72 32" />
+              <path className={`route route-2 ${routeMode === 'failover' ? 'active' : ''}`} d="M20 62 Q48 84 84 55" />
+              <path className={`route route-3 ${routeMode === 'security' ? 'active' : ''}`} d="M30 29 Q58 50 86 43" />
+              <path className="route route-4" d="M23 43 Q52 70 72 68" />
+              <circle className="packet p1" cx="17" cy="48" r="1.2" />
+              <circle className="packet p2" cx="20" cy="62" r="1.2" />
+              <circle className="packet p3" cx="30" cy="29" r="1.2" />
+            </svg>
+            <div className="earth earth-real">
+              <RealEarthGlobe focusMode={routeMode} />
+              <div className="earth-shadow" />
+              <div className="glow" />
+            </div>
+            {nodeLabels[lang].map((node) => (
+              <span className={node.className} key={node.label}>{node.label}<b>{node.type}</b></span>
+            ))}
+          </div>
+          <div className="route-dock">
+            {(Object.keys(routeProfiles) as RouteMode[]).map((mode) => (
+              <button
+                key={mode}
+                className={routeMode === mode ? 'active' : ''}
+                type="button"
+                onClick={() => setRouteMode(mode)}
+              >
+                <span>{routeProfiles[mode].label}</span>
+                <strong>{routeProfiles[mode].path}</strong>
+                <em>{routeProfiles[mode].meta}</em>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <aside className="panel right-stack">
+          <div className="panel-title">
+            <span>{t.feed}</span>
+            <em>{t.feedSub}</em>
+          </div>
+          <div className="feed" aria-live="polite">
+            {events.map((item) => (
+              <div key={item.id} className="feed-item">
+                <span className={`level ${item.level.toLowerCase()}`}>{levelLabel(item.level, lang)}</span>
+                <time>{item.time}</time>
+                <strong>{item.source}</strong>
+                <code>{item.endpoint}</code>
+                <p>{item.message}</p>
+              </div>
+            ))}
+          </div>
+          <div className="health-stack">
+            {healthStack.map((item) => (
+              <div className={item.state} key={item.name}>
+                <span>{item.name}</span><strong>{item.value}</strong><i style={{ width: `${item.score}%` }} />
+              </div>
+            ))}
+          </div>
+          <div className="section-card compact">
+            <div className="section-head"><span>{t.queue}</span><em>{t.queueSub}</em></div>
+            <ol className="response-queue">
+              {responseQueue.map((item) => (
+                <li key={item.text}><b>{item.priority}</b><span>{item.text}</span><em>{item.state}</em></li>
+              ))}
+            </ol>
+          </div>
+        </aside>
+      </section>
+
+      <section className="service-lanes" aria-label={t.services}>
+        {serviceLanes.map((lane) => (
+          <article key={lane.en}>
+            <span>{lang === 'zh' ? lane.zh : lane.en}</span>
+            <strong>{lang === 'zh' ? lane.zhDesc : lane.enDesc}</strong>
+            <div><em>{lane.owner}</em><b>{lang === 'zh' ? lane.zhState : lane.enState}</b><small>SLA {lane.sla}</small></div>
+            <p><i style={{ width: `${Math.min(94, 50 + lane.queue * 2)}%` }} /> <span>{lane.queue}{t.activeTasks}</span></p>
+          </article>
+        ))}
+      </section>
+
+      <footer className="ops-footer">
+        <span>{t.lastSync}: {live.updatedAt}</span>
+        <span>{t.footerSource}</span>
+        <span>{t.entry}</span>
+      </footer>
+    </main>
   );
 }
